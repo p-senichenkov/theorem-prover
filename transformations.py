@@ -14,8 +14,11 @@ def remove_logical_ops(formula: Token) -> Token:
 
 # 2. Narrow negation operations as much as possible
 def narrow_negation(formula: Token) -> Token:
-    if isinstance(formula, Not):
-        formula = formula.narrow()
+    while isinstance(formula, Not):
+        new_formula = formula.narrow()
+        if new_formula == formula:
+            break
+        formula = new_formula
 
     children = formula.children()
     for i in range(len(children)):
@@ -53,7 +56,19 @@ def remove_foralls(formula: Token) -> Token:
     return formula
 
 # 7. Conjunctive normal form
-# TODO: CNF
+# Currently it's just merging of Ors and Ands with their children
+def to_cnf(formula: Token) -> Token:
+    while isinstance(formula, Or) or isinstance(formula, And):
+        new_formula = formula.merge()
+        if new_formula == formula:
+            break
+        formula = new_formula
+
+    children = formula.children()
+    for i in range(len(children)):
+        child = children[i]
+        formula.replace_child(i, to_cnf(child))
+    return formula
 
 # 8. Break to clauses (assume that conjunctions are outermost)
 def break_to_clauses(formula: Token) -> list[Token]:

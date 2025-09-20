@@ -40,6 +40,8 @@ class Variable(Atom):
     def __eq__(self, other):
         return self.name == other.name
 
+    __hash__ = Token.__hash__
+
 class Constant(Atom):
     def __init__(self, value: Any):
         self.value = value
@@ -146,7 +148,7 @@ class NaryLogicalOp(LogicalOp):
     string_repr = ''
 
     def __str__(self):
-        return '(' + f' {self.string_repr} '.join(map(str, self.operands)) + ')'
+        return f' {self.string_repr} '.join(map(lambda op: f'({op})', self.operands))
 
 class ImplicationSign(Token):
     def __init__(self, left: Token, right: Token):
@@ -218,7 +220,7 @@ class DivisibleBy(Predicate):
 # Concrete logical operations
 class Not(LogicalOp):
     def __str__(self):
-        return '¬(' + str(self.operands[0]) + ')'
+        return f'¬({self.operands[0]})'
 
     def narrow(self) -> Token:
         operand = self.operands[0]
@@ -232,6 +234,9 @@ class Not(LogicalOp):
             return Or(list(map(lambda ch: Not([ch]), operand.children())))
         if isinstance(operand, Or):
             return And(list(map(lambda ch: Not([ch]), operand.children())))
+        # Double negation
+        if isinstance(operand, Not):
+            return operand.children()[0]
         return self
 
     def children(self):
@@ -243,8 +248,30 @@ class Not(LogicalOp):
 class And(NaryLogicalOp):
     string_repr = '&'
 
+    def merge(self) -> Token:
+        new_operands = []
+
+        for i in range(len(self.operands)):
+            op = self.operands[i]
+            if isinstance(op, And):
+                new_operands += op.operands
+            else:
+                new_operands.append(op)
+        return And(new_operands)
+
 class Or(NaryLogicalOp):
     string_repr = '∨'
+
+    def merge(self) -> Token:
+        new_operands = []
+
+        for i in range(len(self.operands)):
+            op = self.operands[i]
+            if isinstance(op, Or):
+                new_operands += op.operands
+            else:
+                new_operands.append(op)
+        return Or(new_operands)
 
 class PierceArrow(BinaryLogicalOp):
     string_repr = '↑'

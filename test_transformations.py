@@ -45,6 +45,23 @@ class TransformationsTests(TestCase):
         actual = str(remove_foralls(formula))
         self.assertEqual(actual, expected)
 
+    def test_to_cnf(self):
+        formula = Or([
+            Or([
+                Variable('x'), Or([
+                    Variable('y'), Constant(True), Variable('z')
+                    ]), And([
+                        Variable('z'), And([
+                            Constant(True), Constant(False)
+                            ])
+                        ])
+                ])
+            ])
+        expected = f'(x) {CHARS['or']} (y) {CHARS['or']} ({True}) {CHARS['or']} (z) ' + \
+                   f'{CHARS['or']} ((z) {CHARS['and']} ({True}) {CHARS['and']} ({False}))'
+        actual = str(to_cnf(formula))
+        self.assertEqual(actual, expected)
+
     def test_break_to_clauses(self):
         formula = And([
             Equals([Variable('x'), Variable('y')]),
