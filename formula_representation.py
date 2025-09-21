@@ -38,7 +38,7 @@ class Variable(Atom):
         return self.name
 
     def __eq__(self, other):
-        return self.name == other.name
+        return isinstance(other, Variable) and self.name == other.name
 
     __hash__ = Token.__hash__
 

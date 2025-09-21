@@ -20,10 +20,33 @@ class TransformationsTests(TestCase):
         actual = str(remove_logical_ops(formula))
         self.assertEqual(actual, expected)
 
-    def test_narrow_negation(self):
-        # TODO: all 4 cases
+    def test_narrow_negation_forall(self):
+        formula = Not([Forall(Variable('x'), Variable('y'))])
+        expected = f'{CHARS['exists']}x ({CHARS['not']}(y))'
+        actual = str(narrow_negation(formula))
+        self.assertEqual(actual, expected)
+
+    def test_narrow_negation_exists(self):
+        formula = Not([Exists(Variable('x'), Variable('y'))])
+        expected = f'{CHARS['forall']}x ({CHARS['not']}(y))'
+        actual = str(narrow_negation(formula))
+        self.assertEqual(actual, expected)
+
+    def test_narrow_negation_or(self):
         formula = Not([Or([Variable('x'), Variable('y')])])
         expected = f'({CHARS['not']}(x)) {CHARS['and']} ({CHARS['not']}(y))'
+        actual = str(narrow_negation(formula))
+        self.assertEqual(actual, expected)
+
+    def test_narrow_negation_and(self):
+        formula = Not([And([Variable('x'), Variable('y')])])
+        expected = f'({CHARS['not']}(x)) {CHARS['or']} ({CHARS['not']}(y))'
+        actual = str(narrow_negation(formula))
+        self.assertEqual(actual, expected)
+
+    def test_narrow_negation_not(self):
+        formula = Not([Not([Variable('x')])])
+        expected = 'x'
         actual = str(narrow_negation(formula))
         self.assertEqual(actual, expected)
 
