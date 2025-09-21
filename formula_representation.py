@@ -27,8 +27,8 @@ class Variable(Atom):
 
     @staticmethod
     def new_name():
-        name = 'tmp' + str(self.counter)
-        self.counter += 1
+        name = 'tmp' + str(Variable.counter)
+        Variable.counter += 1
         return name
 
     def __init__(self, name: str):
@@ -41,6 +41,9 @@ class Variable(Atom):
         return self.name == other.name
 
     __hash__ = Token.__hash__
+
+    def get_name(self):
+        return self.name
 
 class Constant(Atom):
     def __init__(self, value: Any):
@@ -115,6 +118,9 @@ class Quantifier(Token):
             self.body = new_child
         else:
             raise IndexError(f'Index {i} is out of Quantifier\'s bounds')
+
+    def rename_var(self, new_var: Variable):
+        self.var = new_var
 
 class Function(SymbolTemplate):
     pass

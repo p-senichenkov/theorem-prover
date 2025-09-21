@@ -2,6 +2,7 @@ from unittest import TestCase, main
 
 from formula_representation import *
 from resolution import resolution
+from logger_conf import configure_logger
 
 class ResolutionTests(TestCase):
     def test_simple_resolution(self):
@@ -30,4 +31,5 @@ class ResolutionTests(TestCase):
         self.assertTrue(resolution(formula))
 
 if __name__ == '__main__':
+    configure_logger()
     main()

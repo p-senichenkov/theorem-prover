@@ -1,8 +1,13 @@
 from formula_representation import *
 from transformations import *
+import logging
+
+from logger_conf import configure_logger
+
+logger = logging.getLogger(__name__)
 
 def resolve(a: Or | Atom, b: Or | Atom) -> (bool, Or | Atom | None, Or | Atom | None):
-    print(f'\tTrying to resolve {a} and {b}...')
+    logger.debug(f'\tTrying to resolve {a} and {b}...')
 
     a_children = set()
     if isinstance(a, Or):
@@ -25,7 +30,7 @@ def resolve(a: Or | Atom, b: Or | Atom) -> (bool, Or | Atom | None, Or | Atom | 
     for a_not in a_nots:
         inner = a_not.children()[0]
         if inner in b_other:
-            print(f'\t\tFound match: not {inner} and {inner}')
+            logger.debug(f'\t\tFound match: {inner}')
             b_other.remove(inner)
             removed_something = True
         else:
@@ -47,7 +52,7 @@ def resolve(a: Or | Atom, b: Or | Atom) -> (bool, Or | Atom | None, Or | Atom | 
     else:
         new_b = Or(list(new_b))
 
-    print(f'\t\tResult: {new_a} and {new_b}')
+    logger.debug(f'\t\tResult: {new_a} and {new_b}')
     return (removed_something, new_a, new_b)
 
 def try_find_unificator(a: Token, b: Token) -> Token:
@@ -59,36 +64,36 @@ def resolution(formula: Token) -> bool:
         raise TypeError(f'Resolution can only be applied to ImplicationSign, got {type(formula)}')
     lhs, rhs = formula.children()
     neg_rhs = Not([rhs])
-    print(f'Working with {lhs} and {neg_rhs}')
+    logger.info(f'Working with {lhs} and {neg_rhs}')
 
     lhs = remove_logical_ops(lhs)
     neg_rhs = remove_logical_ops(neg_rhs)
-    print(f'Removed logical operations: {lhs} and {neg_rhs}')
+    logger.info(f'Removed logical operations: {lhs} and {neg_rhs}')
 
     lhs = narrow_negation(lhs)
     neg_rhs = narrow_negation(neg_rhs)
-    print(f'Narrowed negation: {lhs} and {neg_rhs}')
+    logger.info(f'Narrowed negation: {lhs} and {neg_rhs}')
 
     # TODO: "alpha-conversion"
     lhs = skolemize(lhs)
     neg_rhs = skolemize(neg_rhs)
-    print(f'Skolemized: {lhs} and {neg_rhs}')
+    logger.info(f'Skolemized: {lhs} and {neg_rhs}')
 
     lhs = remove_foralls(lhs)
     neg_rhs = remove_foralls(neg_rhs)
-    print(f'Removed universal quantifiers: {lhs} and {neg_rhs}')
+    logger.info(f'Removed universal quantifiers: {lhs} and {neg_rhs}')
 
     lhs = to_cnf(lhs)
     neg_rhs = to_cnf(neg_rhs)
-    print(f'Brought to CNF: {lhs} and {neg_rhs}')
+    logger.info(f'Brought to CNF: {lhs} and {neg_rhs}')
 
     clauses = break_to_clauses(lhs)
     clauses += break_to_clauses(neg_rhs)
     clauses.sort(key=lambda token: len(token.children()))
-    print(f'Clauses: {' and '.join(list(map(str, clauses)))}')
+    logger.info(f'Clauses: {' and '.join(list(map(str, clauses)))}')
 
     while True:
-        print(f'Clauses: {list(map(str, clauses))}')
+        logger.debug(f'Clauses: {list(map(str, clauses))}')
         removed_something = False
         for i in range(len(clauses)):
             for j in range(len(clauses)):
@@ -112,6 +117,8 @@ def resolution(formula: Token) -> bool:
             return True
 
 if __name__ == '__main__':
+    configure_logger()
+
     formula = ImplicationSign(
         Implication([
             Variable('P'),

@@ -1,5 +1,9 @@
 from formula_representation import *
 
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 # 1. Remove all logical operations, except for And, Or, Not
 def remove_logical_ops(formula: Token) -> Token:
     if isinstance(formula, LogicalOp) and not isinstance(formula, And | Or | Not):
@@ -26,8 +30,32 @@ def narrow_negation(formula: Token) -> Token:
         formula.replace_child(i, narrow_negation(child))
     return formula
 
-# 3. Standartize variable names ("alpha-conversion") -- skip for now
-# TODO: "alpha-conversion"
+# 3. Standartize variable names ("alpha-conversion")
+def standartize_var_names(formula: Token, known_names : set[str] = set()) -> Token:
+    if isinstance(formula, Quantifier):
+        old_name = formula.var.get_name()
+        logger.debug(f'Formula: {formula}')
+        logger.debug(f'Variable name: {old_name}, known names: {list(map(str, known_names))}')
+        if old_name in known_names:
+            new_name = old_name
+            while new_name in known_names:
+                new_name = Variable.new_name()
+            new_var = Variable(new_name)
+            new_body = replace_free_variable(formula.body, formula.var, new_var)
+            formula.rename_var(new_var)
+            formula.replace_child(0, new_body)
+            logger.debug(f'After replacing free variables: {formula}')
+            known_names.add(new_name)
+        else:
+            known_names.add(old_name)
+    elif isinstance(formula, Variable):
+        known_names.add(formula.get_name())
+
+    children = formula.children()
+    for i in range(len(children)):
+        child = children[i]
+        formula.replace_child(i, standartize_var_names(child, known_names))
+    return formula
 
 # 4. Get rid of existance quantifier ("skolemize")
 def skolemize(formula: Token, num_foralls: int = 0) -> Token:

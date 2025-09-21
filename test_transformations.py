@@ -2,6 +2,7 @@ from unittest import TestCase, main
 
 from formula_representation import *
 from transformations import *
+from logger_conf import configure_logger
 
 CHARS = {
         'exists': '∃',
@@ -24,6 +25,23 @@ class TransformationsTests(TestCase):
         formula = Not([Or([Variable('x'), Variable('y')])])
         expected = f'({CHARS['not']}(x)) {CHARS['and']} ({CHARS['not']}(y))'
         actual = str(narrow_negation(formula))
+        self.assertEqual(actual, expected)
+
+    def test_standartize_var_names(self):
+        formula = Or([
+            Variable('x'),
+            Forall(Variable('x'), And([
+                Exists(Variable('x'), Variable('y')),
+                Forall(Variable('y'), Variable('x')),
+                Forall(Variable('x'), Constant('x')),
+                Variable('x')
+                ])),
+            Variable('x')
+            ])
+        expected = f'(x) {CHARS['or']} ({CHARS['forall']}tmp0 (({CHARS['exists']}tmp1 (y)) ' + \
+                f'{CHARS['and']} ({CHARS['forall']}tmp2 (tmp0)) {CHARS['and']} ' + \
+                f'({CHARS['forall']}tmp3 (x)) {CHARS['and']} (tmp0))) {CHARS['or']} (x)'
+        actual = str(standartize_var_names(formula))
         self.assertEqual(actual, expected)
 
     def test_skolemize(self):
@@ -72,4 +90,6 @@ class TransformationsTests(TestCase):
         self.assertEqual(actual, expected)
 
 if __name__ == '__main__':
+    configure_logger()
+
     main()
