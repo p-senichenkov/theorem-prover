@@ -24,7 +24,11 @@ class Token:
     def remove_redundancy(self):
         return self
 
-Formula = list[Token]
+def transform_children(formula: Token, op) -> Token:
+    new_children = list(map(op, formula.children()))
+    for i in range(len(new_children)):
+        formula = formula.replace_child(i, new_children[i])
+    return formula
 
 class Atom(Token):
     pass
@@ -68,6 +72,8 @@ class Constant(Atom):
     def __eq__(self, other):
         return isinstance(other, Constant) and self.value == other.value
 
+    __hash__ = Token.__hash__
+
     def is_const_true(self) -> bool:
         return self.value is True
 
@@ -87,8 +93,10 @@ class SymbolTemplate(Token):
     def children(self):
         return self.args
 
-    def replace_child(self, i: int, new_child: Token):
-        self.args[i] = new_child
+    def replace_child(self, i: int, new_child: Token) -> Token:
+        new_args = self.args[:]
+        new_args[i] = new_child
+        return type(self)(new_args)
 
     def __str__(self):
         return f'{self.unicode_repr}({', '.join(list(map(str, self.args)))})'
@@ -138,11 +146,8 @@ class Quantifier(Token):
     def __repr__(self):
         return f'{self.text_repr} {repr(self.var)} ({repr(self.body)})'
 
-    def replace_child(self, i : int, new_child: Token):
-        if i == 0:
-            self.body = new_child
-        else:
-            raise IndexError(f'Index {i} is out of Quantifier\'s bounds')
+    def replace_child(self, i : int, new_child: Token) -> Token:
+        return type(self)(self.var, new_child)
 
     def rename_var(self, new_var: Variable):
         self.var = new_var
@@ -168,8 +173,10 @@ class LogicalOp(Token):
     def children(self) -> list[Token]:
         return self.operands
 
-    def replace_child(self, i: int, new_child: Token):
-        self.operands[i] = new_child
+    def replace_child(self, i: int, new_child: Token) -> Token:
+        new_ops = self.operands[:]
+        new_ops[i] = new_child
+        return type(self)(new_ops)
 
     def __str__(self):
         if len(self.operands) == 1:
@@ -193,11 +200,10 @@ class ImplicationSign(Token):
     def children(self):
         return [self.left, self.right]
 
-    def replace_child(self, i: int, new_child: Token):
+    def replace_child(self, i: int, new_child: Token) -> Token:
         if i == 0:
-            self.left = new_child
-        else:
-            self.right = new_child
+            return ImplicationSign(new_child, self.right)
+        return ImplicationSign(self.left, new_child)
 
     def __str__(self):
         return f'{self.left} => {self.right}'
@@ -210,6 +216,7 @@ def replace_free_variable(formula: Token, var: Variable, term: Token) -> Token:
     if isinstance(formula, Variable):
         if formula == var:
             return term
+        return formula
     if isinstance(formula, Atom):
         return formula
     if isinstance(formula, Quantifier):
@@ -217,11 +224,7 @@ def replace_free_variable(formula: Token, var: Variable, term: Token) -> Token:
             # Inner occurences are bound
             return formula
 
-    children = formula.children()
-    for i in range(len(children)):
-        child = children[i]
-        formula.replace_child(i, replace_free_variable(child, var, term))
-    return formula
+    return transform_children(formula, lambda ch: replace_free_variable(ch, var, term))
 
 """ Concrete classes """
 # Concrete quantifiers
@@ -229,7 +232,7 @@ class Exists(Quantifier):
     unicode_repr = '∃'
     text_repr = 'exists'
 
-    def remove(self, num_foralls: int) -> Formula:
+    def remove(self, num_foralls: int) -> Token:
         if num_foralls == 0:
             return replace_free_variable(self.body, self.var, SkolemovConstant())
         # TODO: skolemov functions
@@ -239,7 +242,7 @@ class Forall(Quantifier):
     unicode_repr = '∀'
     text_repr = 'forall'
 
-    def remove(self) -> Formula:
+    def remove(self) -> Token:
         return self.body
 
 # Concrete functions
@@ -326,6 +329,10 @@ class And(NaryLogicalOp):
             if not isinstance(op, Not) and Not([op]) in self.operands:
                 return Constant(False)
 
+        # Single operand
+        if len(self.operands) == 1:
+            return self.operands[0]
+
         return self
 
 class Or(NaryLogicalOp):
@@ -377,6 +384,10 @@ class Or(NaryLogicalOp):
         for op in self.operands:
             if not isinstance(op, Not) and Not([op]) in self.operands:
                 return Constant(True)
+
+        # Single operand
+        if len(self.operands) == 1:
+            return self.operands[0]
 
         return self
 

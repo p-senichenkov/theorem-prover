@@ -10,11 +10,7 @@ def remove_logical_ops(formula: Token) -> Token:
         formula = formula.remove()
         return remove_logical_ops(formula)
 
-    children = formula.children()
-    for i in range(len(children)):
-        child = children[i]
-        formula.replace_child(i, remove_logical_ops(child))
-    return formula
+    return transform_children(formula, remove_logical_ops)
 
 # 2. Narrow negation operations as much as possible
 def narrow_negation(formula: Token) -> Token:
@@ -24,11 +20,7 @@ def narrow_negation(formula: Token) -> Token:
             break
         formula = new_formula
 
-    children = formula.children()
-    for i in range(len(children)):
-        child = children[i]
-        formula.replace_child(i, narrow_negation(child))
-    return formula
+    return transform_children(formula, narrow_negation)
 
 # 3. Standartize variable names ("alpha-conversion")
 def standartize_var_names(formula: Token, known_names : set[str] = set()) -> Token:
@@ -43,7 +35,7 @@ def standartize_var_names(formula: Token, known_names : set[str] = set()) -> Tok
             new_var = Variable(new_name)
             new_body = replace_free_variable(formula.body, formula.var, new_var)
             formula.rename_var(new_var)
-            formula.replace_child(0, new_body)
+            formula = formula.replace_child(0, new_body)
             logger.debug(f'After replacing free variables: {formula}')
             known_names.add(new_name)
         else:
@@ -54,7 +46,7 @@ def standartize_var_names(formula: Token, known_names : set[str] = set()) -> Tok
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula.replace_child(i, standartize_var_names(child, known_names))
+        formula = formula.replace_child(i, standartize_var_names(child, known_names))
     return formula
 
 # 4. Get rid of existance quantifier ("skolemize")
@@ -68,7 +60,7 @@ def skolemize(formula: Token, num_foralls: int = 0) -> Token:
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula.replace_child(i, skolemize(child, num_foralls))
+        formula = formula.replace_child(i, skolemize(child, num_foralls))
     return formula
 
 # 5, 6. Move universal quantifiers to the beginning and remove them
@@ -80,7 +72,7 @@ def remove_foralls(formula: Token) -> Token:
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula.replace_child(i, remove_foralls(child))
+        formula = formula.replace_child(i, remove_foralls(child))
     return formula
 
 # 7. Conjunctive normal form:
@@ -95,7 +87,7 @@ def merge_nary_ops(formula: Token) -> Token:
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula.replace_child(i, to_cnf(child))
+        formula = formula.replace_child(i, to_cnf(child))
     return formula
 
 #   b. Apply Or's distributivity
@@ -106,7 +98,7 @@ def distribute(formula: Token) -> Token:
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula.replace_child(i, distribute(child))
+        formula = formula.replace_child(i, distribute(child))
     return formula
 
 def to_cnf(formula: Token) -> Token:
@@ -118,7 +110,7 @@ def to_cnf(formula: Token) -> Token:
         formula = new_formula
 
 # 7.5. Remove all kinds of redundancies
-def remove_redundancy(formula: Token) -> Token:
+def remove_redundancy_rec(formula: Token) -> Token:
     while True:
         new_formula = formula.remove_redundancy()
         if new_formula == formula:
@@ -128,8 +120,18 @@ def remove_redundancy(formula: Token) -> Token:
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula.replace_child(i, remove_redundancy(child))
+        formula = formula.replace_child(i, remove_redundancy_rec(child))
     return formula
+
+def remove_redundancy(formula: Token) -> Token:
+    while True:
+        logger.debug(f'\tFormula: {formula}')
+        new_formula = remove_redundancy_rec(formula)
+        logger.debug(f'\t\tNew formula: {new_formula}')
+        if new_formula == formula:
+            logger.debug('\t\tEqual')
+            return formula
+        formula = new_formula
 
 # 8. Break to clauses (assume that conjunctions are outermost)
 def break_to_clauses(formula: Token) -> list[Token]:

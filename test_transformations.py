@@ -65,14 +65,14 @@ class TransformationsTests(TestCase):
 
     def test_standartize_var_names(self):
         formula = Or([
-            Variable('x'),
-            Forall(Variable('x'), And([
-                Exists(Variable('x'), Variable('y')),
-                Forall(Variable('y'), Variable('x')),
-                Forall(Variable('x'), Constant('x')),
-                Variable('x')
+            Variable('x'),                              # x is free -- not replacing
+            Forall(Variable('x'), And([                 # x is quantifier's variable -- replacing with tmp0
+                Exists(Variable('x'), Variable('y')),   # x is quantifier's variable -- replacing  with tmp1, y is free
+                Forall(Variable('y'), Variable('x')),   # x is bound -- replacing with tmp0, y is quantifier's variable -- replacing with tmp2
+                Forall(Variable('x'), Constant('x')),   # x is quantifier's variable -- replacing with tmp3, second x is constant -- not replacing
+                Variable('x')                           # x is bound -- replacing with tmp0
                 ])),
-            Variable('x')
+            Variable('x')                               # x is free -- not replacing
             ])
         expected = '(v_x) or (forall v_tmp0 ((exists v_tmp1 (v_y)) and (forall v_tmp2 ' + \
                 f'(v_tmp0)) and (forall v_tmp3 (c_{repr('x')})) and (v_tmp0))) or (v_x)'
@@ -192,6 +192,12 @@ class TransformationsTests(TestCase):
         actual = repr(remove_redundancy(formula))
         self.assertEqual(actual, expected)
 
+    def test_remove_redundancy_And_single_operand(self):
+        formula = And([Variable('x')])
+        expected = 'v_x'
+        actual = repr(remove_redundancy(formula))
+        self.assertEqual(actual, expected)
+
     def test_remove_redundancy_A_or_T(self):
         formula = Or([Variable('x'), Constant(True), Variable('y')])
         expected = f'c_{repr(True)}'
@@ -213,6 +219,21 @@ class TransformationsTests(TestCase):
     def test_remove_redundancy_A_or_not_A(self):
         formula = Or([Variable('x'), Not([Variable('x')]), Variable('y')])
         expected = f'c_{repr(True)}'
+        actual = repr(remove_redundancy(formula))
+        self.assertEqual(actual, expected)
+
+    def test_remove_redundancy_Or_single_operand(self):
+        formula = Or([Variable('x')])
+        expected = 'v_x'
+        actual = repr(remove_redundancy(formula))
+        self.assertEqual(actual, expected)
+
+    def test_remove_redundancy_cascade(self):
+        formula = And([
+            Or([Variable('x'), Variable('y'), Not([Variable('x')])]),
+            Variable('z')
+            ])
+        expected = 'v_z'
         actual = repr(remove_redundancy(formula))
         self.assertEqual(actual, expected)
 

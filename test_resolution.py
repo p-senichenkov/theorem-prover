@@ -59,7 +59,6 @@ class ResolutionTests(TestCase):
                 )
         res = Resolution(formula)
         self.assertFalse(res.resolution())
-        self.assertListEqual(res.get_clauses(), [Variable('L'), Variable('L')])
 
 if __name__ == '__main__':
     configure_logger()

@@ -65,6 +65,10 @@ class Resolution:
         self.clauses = []
 
     def comb_clauses(self):
+        child_key = lambda ch: ch.name if isinstance(ch, Variable) else ''
+        sort_children = lambda clause: Or(sorted(clause.children(), key=child_key)) if isinstance(clause, Or) else clause
+
+        self.clauses = list(map(sort_children, self.clauses))
         self.clauses = list(set(self.clauses))
         self.clauses = list(filter(lambda x: x is not None, self.clauses))
         self.clauses.sort(key=lambda token: len(token.children()))
@@ -100,10 +104,13 @@ class Resolution:
         neg_rhs = to_cnf(neg_rhs)
         logger.info(f'Brought to CNF: {lhs} and {neg_rhs}')
 
+        lhs = remove_redundancy(lhs)
+        neg_rhs = remove_redundancy(neg_rhs)
+        logger.info(f'Removed redundancy: {lhs} and {neg_rhs}')
+
         self.clauses = break_to_clauses(lhs)
         self.clauses += break_to_clauses(neg_rhs)
         self.comb_clauses()
-        logger.info(f'Clauses: {' and '.join(list(map(str, self.clauses)))}')
 
         while True:
             logger.debug(f'Clauses: {list(map(str, self.clauses))}')
