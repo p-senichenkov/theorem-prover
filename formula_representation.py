@@ -5,6 +5,9 @@ class Token:
     def __str__(self):
         raise NotImplementedError(f'Unknown token: {type(self)}')
 
+    def __repr__(self):
+        raise NotImplementedError(f'Unknown token: {type(self)}')
+
     def children(self):
         return []
 
@@ -16,6 +19,10 @@ class Token:
 
     def __hash__(self):
         return hash(str(self))
+
+    # Remove all kinds of redundancy (depending on type)
+    def remove_redundancy(self):
+        return self
 
 Formula = list[Token]
 
@@ -37,6 +44,9 @@ class Variable(Atom):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return f'v_{self.name}'
+
     def __eq__(self, other):
         return isinstance(other, Variable) and self.name == other.name
 
@@ -52,11 +62,21 @@ class Constant(Atom):
     def __str__(self):
         return str(self.value)
 
+    def __repr__(self):
+        return f'c_{repr(self.value)}'
+
     def __eq__(self, other):
-        return self.value == other.value
+        return isinstance(other, Constant) and self.value == other.value
+
+    def is_const_true(self) -> bool:
+        return self.value is True
+
+    def is_const_false(self) -> bool:
+        return self.value is False
 
 class SymbolTemplate(Token):
-    string_repr = ''
+    unicode_repr = ''
+    text_repr = ''
 
     def __init__(self, args: list[Token]):
         self.args = args
@@ -71,13 +91,10 @@ class SymbolTemplate(Token):
         self.args[i] = new_child
 
     def __str__(self):
-        res = self.string_repr + '('
-        for i in range(len(self.args)):
-            if i > 0:
-                res += ', '
-            res += str(self.args[i])
-        res += ')'
-        return res
+        return f'{self.unicode_repr}({', '.join(list(map(str, self.args)))})'
+
+    def __repr__(self):
+        return f'{self.text_repr}({', '.join(list(map(repr, self.args)))})'
 
 class SkolemovConstant(Atom):
     counter = 0
@@ -89,16 +106,21 @@ class SkolemovConstant(Atom):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return f'sc_{self.name}'
+
 class SkolemovFunction(SymbolTemplate):
     counter = 0
 
     def __init__(self, args: list[Variable]):
-        self.string_repr = 'f' + str(SkolemovFunction.counter)
+        self.unicode_repr = 'f' + str(SkolemovFunction.counter)
+        self.text_repr = f'sf_{self.unicode_repr}'
         SkolemovFunction.counter += 1
         self.args = args
 
 class Quantifier(Token):
-    string_repr = ''
+    unicode_repr = ''
+    text_repr = ''
 
     def __init__(self, var: Variable, body: Token):
         self.var = var
@@ -111,7 +133,10 @@ class Quantifier(Token):
         return [self.body]
 
     def __str__(self):
-        return self.string_repr + str(self.var) + ' (' + str(self.body) + ')'
+        return f'{self.unicode_repr}{self.var} ({self.body})'
+
+    def __repr__(self):
+        return f'{self.text_repr} {repr(self.var)} ({repr(self.body)})'
 
     def replace_child(self, i : int, new_child: Token):
         if i == 0:
@@ -129,6 +154,9 @@ class Predicate(SymbolTemplate):
     pass
 
 class LogicalOp(Token):
+    unicode_repr = ''
+    text_repr = ''
+
     def __init__(self, operands: list[Token]):
         if not isinstance(operands, Sequence):
             raise TypeError(f'Operands of LogicalOp must be a sequence (got {type(operands)})')
@@ -143,23 +171,24 @@ class LogicalOp(Token):
     def replace_child(self, i: int, new_child: Token):
         self.operands[i] = new_child
 
-class BinaryLogicalOp(LogicalOp):
-    string_repr = ''
-
     def __str__(self):
-        return '(' + str(self.operands[0]) + ') ' + self.string_repr + \
-               ' (' + str(self.operands[1]) + ')'
+        if len(self.operands) == 1:
+            return f'{self.unicode_repr}({self.operands[0]})'
+        return f' {self.unicode_repr} '.join(list(map(lambda op: f'({op})', self.operands)))
+
+    def __repr__(self):
+        if len(self.operands) == 1:
+            return f'{self.text_repr}({repr(self.operands[0])})'
+        return f' {self.text_repr} '.join(list(map(lambda op: f'({repr(op)})', self.operands)))
 
 class NaryLogicalOp(LogicalOp):
-    string_repr = ''
-
-    def __str__(self):
-        return f' {self.string_repr} '.join(map(lambda op: f'({op})', self.operands))
+    def merge(self) -> Token:
+        return self
 
 class ImplicationSign(Token):
-    def __init__(self, left: Token, right: Token):
-        self.left = left
-        self.right = right
+    def __init__(self, left: Token | Sequence[Token], right: Token | Sequence[Token]):
+        self.left = left if isinstance(left, Token) else And(left)
+        self.right = right if isinstance(right, Token) else Or(right)
 
     def children(self):
         return [self.left, self.right]
@@ -171,7 +200,10 @@ class ImplicationSign(Token):
             self.right = new_child
 
     def __str__(self):
-        return str(self.left) + ' => ' + str(self.right)
+        return f'{self.left} => {self.right}'
+
+    def __repr__(self):
+        return f'{repr(self.left)} Implies {repr(self.right)}'
 
 # Replace free occurences of var with term. Used in skolemization
 def replace_free_variable(formula: Token, var: Variable, term: Token) -> Token:
@@ -194,7 +226,8 @@ def replace_free_variable(formula: Token, var: Variable, term: Token) -> Token:
 """ Concrete classes """
 # Concrete quantifiers
 class Exists(Quantifier):
-    string_repr = '∃'
+    unicode_repr = '∃'
+    text_repr = 'exists'
 
     def remove(self, num_foralls: int) -> Formula:
         if num_foralls == 0:
@@ -203,21 +236,32 @@ class Exists(Quantifier):
         raise NotImplementedError()
 
 class Forall(Quantifier):
-    string_repr = '∀'
+    unicode_repr = '∀'
+    text_repr = 'forall'
 
     def remove(self) -> Formula:
         return self.body
 
 # Concrete functions
 class Multiply(Function):
+    # TODO
     pass
 
 # Concrete predicates
 class Equals(Predicate):
-    string_repr = '='
+    unicode_repr = '='
+    text_repr = 'equals'
     # TODO: how to apply axiom (a = b * c), (b = d * e) => (a = c * d * e)?
 
+    def remove_redundancy(self):
+        if self.args[0] == self.args[1]:
+            return Constant(True)
+        return self
+
 class DivisibleBy(Predicate):
+    unicode_repr = '⋮'
+    text_repr = 'divby'
+
     def apply_axioms(self) -> list[Token]:
         # a \divby b => \exists m (a = m * b)
         m = Variable(Variable.new_name())
@@ -225,8 +269,8 @@ class DivisibleBy(Predicate):
 
 # Concrete logical operations
 class Not(LogicalOp):
-    def __str__(self):
-        return f'¬({self.operands[0]})'
+    unicode_repr = '¬'
+    text_repr = 'not'
 
     def narrow(self) -> Token:
         operand = self.operands[0]
@@ -245,14 +289,9 @@ class Not(LogicalOp):
             return operand.children()[0]
         return self
 
-    def children(self):
-        return self.operands
-
-    def replace_child(self, i: int, new_child: Token):
-        self.operands[0] = new_child
-
 class And(NaryLogicalOp):
-    string_repr = '&'
+    unicode_repr = '&'
+    text_repr = 'and'
 
     def merge(self) -> Token:
         new_operands = []
@@ -265,8 +304,33 @@ class And(NaryLogicalOp):
                 new_operands.append(op)
         return And(new_operands)
 
+    def remove_redundancy(self) -> Token:
+        # A and F <=> F
+        for op in self.operands:
+            if isinstance(op, Constant) and op.is_const_false():
+                return Constant(False)
+
+        # A and T <=> A
+        new_ops = list(filter(lambda op: not isinstance(op, Constant) or not op.is_const_true(),
+                              self.operands))
+        if len(new_ops) < len(self.operands):
+            return And(new_ops)
+
+        # A and A <=> A
+        new_ops = list(set(self.operands))
+        if len(new_ops) < len(self.operands):
+            return And(new_ops)
+
+        # A and not A <=> F
+        for op in self.operands:
+            if not isinstance(op, Not) and Not([op]) in self.operands:
+                return Constant(False)
+
+        return self
+
 class Or(NaryLogicalOp):
-    string_repr = '∨'
+    unicode_repr = '∨'
+    text_repr = 'or'
 
     def merge(self) -> Token:
         new_operands = []
@@ -279,14 +343,67 @@ class Or(NaryLogicalOp):
                 new_operands.append(op)
         return Or(new_operands)
 
-class PierceArrow(BinaryLogicalOp):
-    string_repr = '↑'
+    # Apply distributive law to *first* And child
+    def distribute(self) -> Token:
+        for i in range(len(self.operands)):
+            op = self.operands[i]
+            if isinstance(op, And):
+                new_ops = []
+                for and_op in op.children():
+                    new_or_ops = self.operands[:]
+                    new_or_ops[i] = and_op
+                    new_ops.append(Or(new_or_ops))
+                return And(new_ops)
+        return self
+
+    def remove_redundancy(self) -> Token:
+        # A or T <=> T
+        for op in self.operands:
+            if isinstance(op, Constant) and op.is_const_true():
+                return Constant(True)
+
+        # A or F <=> A
+        new_ops = list(filter(lambda op: not isinstance(op, Constant) or not op.is_const_false(),
+                              self.operands))
+        if len(new_ops) < len(self.operands):
+            return Or(new_ops)
+
+        # A or A <=> A
+        new_ops = list(set(self.operands))
+        if len(new_ops) < len(self.operands):
+            return Or(new_ops)
+
+        # A or not A <=> T
+        for op in self.operands:
+            if not isinstance(op, Not) and Not([op]) in self.operands:
+                return Constant(True)
+
+        return self
+
+class PierceArrow(LogicalOp):
+    unicode_repr = '↑'
+    text_repr = 'nor'
 
     def remove(self) -> Token:
         return Not([Or(self.operands)])
 
-class Implication(BinaryLogicalOp):
-    string_repr = '→'
+class Implication(LogicalOp):
+    unicode_repr = '→'
+    text_repr = 'implies'
 
     def remove(self) -> Token:
         return Or([Not([self.operands[0]]), self.operands[1]])
+
+class Equivalence(LogicalOp):
+    unicode_repr = '↔'
+    text_repr = 'equiv'
+
+    def remove(self) -> Token:
+        return And([Implication(self.operands), Implication(list(reversed(self.operands)))])
+
+class Xor(LogicalOp):
+    unicode_repr = '⊕'
+    text_repr = 'xor'
+
+    def remove(self) -> Token:
+        return Not([Equivalence(self.operands)])

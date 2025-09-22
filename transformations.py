@@ -83,10 +83,10 @@ def remove_foralls(formula: Token) -> Token:
         formula.replace_child(i, remove_foralls(child))
     return formula
 
-# 7. Conjunctive normal form
-# Currently it's just merging of Ors and Ands with their children
-def to_cnf(formula: Token) -> Token:
-    while isinstance(formula, Or) or isinstance(formula, And):
+# 7. Conjunctive normal form:
+#   a. Merge n-ary logical operations
+def merge_nary_ops(formula: Token) -> Token:
+    while isinstance(formula, NaryLogicalOp):
         new_formula = formula.merge()
         if new_formula == formula:
             break
@@ -96,6 +96,39 @@ def to_cnf(formula: Token) -> Token:
     for i in range(len(children)):
         child = children[i]
         formula.replace_child(i, to_cnf(child))
+    return formula
+
+#   b. Apply Or's distributivity
+def distribute(formula: Token) -> Token:
+    if isinstance(formula, Or):
+        formula = formula.distribute()
+
+    children = formula.children()
+    for i in range(len(children)):
+        child = children[i]
+        formula.replace_child(i, distribute(child))
+    return formula
+
+def to_cnf(formula: Token) -> Token:
+    while True:
+        new_formula = merge_nary_ops(formula)
+        new_formula = distribute(new_formula)
+        if new_formula == formula:
+            return new_formula
+        formula = new_formula
+
+# 7.5. Remove all kinds of redundancies
+def remove_redundancy(formula: Token) -> Token:
+    while True:
+        new_formula = formula.remove_redundancy()
+        if new_formula == formula:
+            break
+        formula = new_formula
+
+    children = formula.children()
+    for i in range(len(children)):
+        child = children[i]
+        formula.replace_child(i, remove_redundancy(child))
     return formula
 
 # 8. Break to clauses (assume that conjunctions are outermost)
