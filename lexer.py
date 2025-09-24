@@ -1,0 +1,76 @@
+import ply.lex as lex
+
+from formula_representation import *
+
+# TODO: Unicode mode
+ascii_ops = {
+        'exists': 'EXISTS',
+        'forall': 'FORALL',
+        'equals': 'EQUALS',
+        'divby': 'DIVBY',
+        'not': 'NOT',
+        'and': 'AND',
+        'or': 'OR',
+        'nor': 'PIERCE_ARROW',
+        'implies': 'IMPLICATION',
+        'equiv': 'EQUIV',
+        'xor': 'XOR',
+        }
+
+# Only final classes are here
+tokens = [
+        'VARIABLE',
+        'CONSTANT',
+        'IMPLICATION_SIGN',
+        'L_PAREN',
+        'R_PAREN',
+        'COMMA',
+        ] + list(ascii_ops.values())
+
+# Fixed-character tokens
+t_IMPLICATION_SIGN = r'\=\>'
+
+# Unicode mode
+t_EXISTS = r'∃'
+t_FORALL = r'∀'
+t_EQUALS = r'\='
+t_DIVBY = r'⋮'
+t_NOT = r'¬'
+t_AND = r'\&'
+t_OR = r'∨'
+t_PIERCE_ARROW = r'↑'
+t_IMPLICATION = r'→'
+t_EQUIV = r'↔'
+t_XOR = r'⊕'
+
+# Service characters
+t_L_PAREN = r'\('
+t_R_PAREN = r'\)'
+t_COMMA = r'\,'
+
+def t_VARIABLE(t):
+    r'[a-zA-Z]+'
+    t.type = ascii_ops.get(t.value, 'VARIABLE')
+    return t
+
+def t_CONSTANT(t):
+    r"['][\S]+[']"
+    t.value = t.value[1:-1]
+    return t
+
+t_ignore = ' \t'
+
+def t_error(t):
+    print(f'Illegal character \'{t.value[0]}\'')
+    t.lexer.skip(1)
+
+lexer = lex.lex()
+
+if __name__ == '__main__':
+    lexer.input(input())
+
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break
+        print(tok)

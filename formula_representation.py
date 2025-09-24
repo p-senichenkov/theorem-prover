@@ -131,6 +131,8 @@ class Quantifier(Token):
     text_repr = ''
 
     def __init__(self, var: Variable, body: Token):
+        if not isinstance(var, Variable):
+            raise TypeError(f'Variable of quantifier must be Variable, got {type(var)}')
         self.var = var
         self.body = body
 
@@ -246,9 +248,7 @@ class Forall(Quantifier):
         return self.body
 
 # Concrete functions
-class Multiply(Function):
-    # TODO
-    pass
+# TODO
 
 # Concrete predicates
 class Equals(Predicate):
