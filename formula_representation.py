@@ -74,6 +74,9 @@ class Constant(Atom):
 
     __hash__ = Token.__hash__
 
+    def get_value(self) -> Any:
+        return self.value
+
     def is_const_true(self) -> bool:
         return self.value is True
 
@@ -115,7 +118,12 @@ class SkolemovConstant(Atom):
         return self.name
 
     def __repr__(self):
-        return f'sc_{self.name}'
+        return f'sc_{repr(self.name)}'
+
+    def __eq__(self, other):
+        return isinstance(other, SkolemovConstant) and self.name == other.name
+
+    __hash__ = Token.__hash__
 
 class SkolemovFunction(SymbolTemplate):
     counter = 0
@@ -154,11 +162,29 @@ class Quantifier(Token):
     def rename_var(self, new_var: Variable):
         self.var = new_var
 
-class Function(SymbolTemplate):
+class FunctionOrPredicate(SymbolTemplate):
     pass
 
-class Predicate(SymbolTemplate):
-    pass
+class CustomFunctionOrPredicate(FunctionOrPredicate):
+    '''Function or predicate symbol that doesn't have axioms'''
+    def __init__(self, name: str, args: list[Token]):
+        self.unicode_repr = name
+        self.text_repr = f'cfp_{name}'
+        self.args = args
+
+    def apply_axioms(self) -> list[Token]:
+        return [self]
+
+    def replace_child(self, i: int, new_ch: Token):
+        new_args = self.args[:]
+        new_args[i] = new_ch
+        return CustomFunctionOrPredicate(self.unicode_repr, new_args)
+
+    def __eq__(self, other: Token) -> bool:
+        return isinstance(other, CustomFunctionOrPredicate) and \
+                self.unicode_repr == other.unicode_repr and self.args == other.args
+
+    __hash__ = Token.__hash__
 
 class LogicalOp(Token):
     unicode_repr = ''
@@ -195,9 +221,20 @@ class NaryLogicalOp(LogicalOp):
         return self
 
 class ImplicationSign(Token):
-    def __init__(self, left: Token | Sequence[Token], right: Token | Sequence[Token]):
-        self.left = left if isinstance(left, Token) else And(left)
-        self.right = right if isinstance(right, Token) else Or(right)
+    def __init__(self, left: Token | Sequence[Token] | None, right: Token | Sequence[Token]):
+        if left is None or isinstance(left, list) and len(left) == 0:
+            self.left = Constant(True)
+        elif isinstance(left, Token):
+            self.left = left
+        else:
+            self.left = And(left)
+
+        if right is None or isinstance(right, list) and len(right) == 0:
+            self.right = Constant(False)
+        elif isinstance(right, Token):
+            self.right = right
+        else:
+            self.right = And(right)
 
     def children(self):
         return [self.left, self.right]
@@ -251,7 +288,7 @@ class Forall(Quantifier):
 # TODO
 
 # Concrete predicates
-class Equals(Predicate):
+class Equals(FunctionOrPredicate):
     unicode_repr = '='
     text_repr = 'equals'
     # TODO: how to apply axiom (a = b * c), (b = d * e) => (a = c * d * e)?
@@ -261,7 +298,7 @@ class Equals(Predicate):
             return Constant(True)
         return self
 
-class DivisibleBy(Predicate):
+class DivisibleBy(FunctionOrPredicate):
     unicode_repr = '⋮'
     text_repr = 'divby'
 

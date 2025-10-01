@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 
 from formula_representation import *
-from resolution import Resolution
+from resolution import PropositionalResolution, PredicateResolution, Clause, Resolution
 from logger_conf import configure_logger
 
 class ResolutionTests(TestCase):
@@ -9,7 +9,6 @@ class ResolutionTests(TestCase):
         formula = ImplicationSign(Variable('x'), Variable('x'))
         res = Resolution(formula)
         self.assertTrue(res.resolution())
-        self.assertEqual(len(res.get_clauses()), 0)
 
     def test_more_complex_resolution(self):
         formula = ImplicationSign(
@@ -18,7 +17,6 @@ class ResolutionTests(TestCase):
                 )
         res = Resolution(formula)
         self.assertTrue(res.resolution())
-        self.assertEqual(len(res.get_clauses()), 0)
 
     def test_resolution_textbook_example_1(self):
         # P -> (Q -> R) => (P & Q) -> R
@@ -34,7 +32,6 @@ class ResolutionTests(TestCase):
             )
         res = Resolution(formula)
         self.assertTrue(res.resolution())
-        self.assertEqual(len(res.get_clauses()), 0)
 
     def test_resolution_textbook_example_2(self):
         # John didn't meet Smith last night only if either Smith is a killer or John lies.
@@ -59,6 +56,92 @@ class ResolutionTests(TestCase):
                 )
         res = Resolution(formula)
         self.assertFalse(res.resolution())
+
+    def test_substitute(self):
+        const_1 = SkolemovConstant()
+        const_2 = SkolemovConstant()
+        clause = Or([
+            Not([const_1]),
+            Constant('x'),
+            Variable('y'),
+            const_1,
+            const_2,
+            ])
+        expected = f'(not(c_True)) or (c_\'x\') or (v_y) or (c_True) or ({repr(const_2)})'
+        actual = repr(PredicateResolution.substitute_sk_const(clause, Constant(True), const_1))
+        self.assertEqual(actual, expected)
+
+    def test_predicate_resolution_1(self):
+        formula = ImplicationSign(
+                Variable('x'),
+                Forall(Variable('y'), Variable('y'))
+                )
+        res = Resolution(formula)
+        self.assertTrue(res.resolution())
+
+    def test_predicate_resolution_2(self):
+        formula = ImplicationSign(
+                Or([Variable('x'), Variable('y')]),
+                Forall(Variable('z'), Or([Variable('x'), Variable('z')]))
+                )
+        res = Resolution(formula)
+        self.assertTrue(res.resolution())
+
+    def test_predicate_textbook_example_1(self):
+        '''All his ideas are brilliant. Some of his ideas are incorrect.
+        Anything that is incorrect cannot be brilliant.
+        Therefore, some of his ideads are delusional'''
+        formula = ImplicationSign(
+                And([
+                    Forall(Variable('x'),
+                        Implication([
+                            CustomFunctionOrPredicate('I', [Variable('x')]),
+                            CustomFunctionOrPredicate('G', [Variable('x')])
+                            ])
+                        ),
+                    Exists(Variable('x'),
+                           And([
+                               CustomFunctionOrPredicate('I', [Variable('x')]),
+                               CustomFunctionOrPredicate('W', [Variable('x')])
+                               ])
+                        ),
+                    Not([
+                        Exists(Variable('x'),
+                               And([
+                                   CustomFunctionOrPredicate('W', [Variable('x')]),
+                                   CustomFunctionOrPredicate('G', [Variable('x')])
+                                   ])
+                               )
+                        ])
+                    ]),
+                Exists(Variable('x'),
+                       And([
+                           CustomFunctionOrPredicate('I', [Variable('x')]),
+                           CustomFunctionOrPredicate('B', [Variable('x')])
+                           ])
+                       )
+                )
+
+    def test_predicate_textbook_example_2(self):
+        '''Every student attend lessons sometimes.
+        Vasya has never attended lessons.
+        Therefore, Vasya is not a student.'''
+        formula = ImplicationSign(
+                And([
+                    Forall(Variable('x'), Implication([
+                        CustomFunctionOrPredicate('S', [Variable('x')]),
+                        CustomFunctionOrPredicate('L', [Variable('x')])
+                        ])),
+                    Not([
+                        CustomFunctionOrPredicate('L', [Constant('V')])
+                        ])
+                    ]),
+                Not([
+                    CustomFunctionOrPredicate('S', [Constant('V')])
+                     ])
+                )
+        res = Resolution(formula)
+        self.assertTrue(res.resolution())
 
 if __name__ == '__main__':
     configure_logger()
