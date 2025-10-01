@@ -1,0 +1,1 @@
+forall x ( (p_I(x)) -> (p_G(x)) ) exists x ( (p_I(x)) & (p_W(x)) ) !(exists x ( (p_W(x)) & (p_G(x)) )) => exists x ( (p_I(x)) & (p_B(x)) )

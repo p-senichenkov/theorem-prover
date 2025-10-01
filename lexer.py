@@ -2,7 +2,6 @@ import ply.lex as lex
 
 from formula_representation import *
 
-# TODO: Unicode mode
 ascii_ops = {
         'exists': 'EXISTS',
         'forall': 'FORALL',
@@ -25,6 +24,7 @@ tokens = [
         'L_PAREN',
         'R_PAREN',
         'COMMA',
+        'CUSTOM_FUNCTION_OR_PREDICATE'
         ] + list(ascii_ops.values())
 
 # Fixed-character tokens
@@ -35,11 +35,11 @@ t_EXISTS = r'∃'
 t_FORALL = r'∀'
 t_EQUALS = r'\='
 t_DIVBY = r'⋮'
-t_NOT = r'¬'
+t_NOT = r'¬|\!'
 t_AND = r'\&'
 t_OR = r'∨'
 t_PIERCE_ARROW = r'↑'
-t_IMPLICATION = r'→'
+t_IMPLICATION = r'→|\-\>'
 t_EQUIV = r'↔'
 t_XOR = r'⊕'
 
@@ -47,6 +47,11 @@ t_XOR = r'⊕'
 t_L_PAREN = r'\('
 t_R_PAREN = r'\)'
 t_COMMA = r'\,'
+
+def t_CUSTOM_FUNCTION_OR_PREDICATE(t):
+    r'[p|f][_][a-zA-Z]+'
+    t.value = t.value[2:]
+    return t
 
 def t_VARIABLE(t):
     r'[a-zA-Z]+'
