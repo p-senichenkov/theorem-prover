@@ -1,4 +1,5 @@
 import logging
 
+
 def configure_logger() -> None:
-    logging.basicConfig(level=logging.INFO, format='')
+    logging.basicConfig(filename='latest.log', level=logging.INFO, format='')

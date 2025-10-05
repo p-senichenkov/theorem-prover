@@ -11,16 +11,17 @@ ascii_ops = {
         'and': 'AND',
         'or': 'OR',
         'nor': 'PIERCE_ARROW',
+        'nand': 'SHEFFER_STROKE',
         'implies': 'IMPLICATION',
         'equiv': 'EQUIV',
         'xor': 'XOR',
+        'Implies': 'IMPLICATION_SIGN',
         }
 
 # Only final classes are here
 tokens = [
         'VARIABLE',
         'CONSTANT',
-        'IMPLICATION_SIGN',
         'L_PAREN',
         'R_PAREN',
         'COMMA',
@@ -28,7 +29,7 @@ tokens = [
         ] + list(ascii_ops.values())
 
 # Fixed-character tokens
-t_IMPLICATION_SIGN = r'\=\>'
+t_IMPLICATION_SIGN = r'\=\>|[|]-'
 
 # Unicode mode
 t_EXISTS = r'∃'
@@ -37,10 +38,11 @@ t_EQUALS = r'\='
 t_DIVBY = r'⋮'
 t_NOT = r'¬|\!'
 t_AND = r'\&'
-t_OR = r'∨'
-t_PIERCE_ARROW = r'↑'
+t_OR = r'∨|[|]'
+t_PIERCE_ARROW = r'↓'
+t_SHEFFER_STROKE = r'↑'
 t_IMPLICATION = r'→|\-\>'
-t_EQUIV = r'↔'
+t_EQUIV = r'↔|\<\-\>'
 t_XOR = r'⊕'
 
 # Service characters

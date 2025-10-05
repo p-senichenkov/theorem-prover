@@ -26,6 +26,7 @@ op_appl : (clause) binary_op (clause)
         | empty
 
 binary_op : PIERCE_ARROW
+          | SHEFFER_STROKE
           | IMPLICATION
           | EQUIV
           | XOR
@@ -114,6 +115,10 @@ def p_op_appl_empty(p):
 def p_binary_op_pierce_arrow(p):
     'binary_op : PIERCE_ARROW'
     p[0] = PierceArrow
+
+def p_binary_op_sheffer_stroke(p):
+    'binary_op : SHEFFER_STROKE'
+    p[0] = ShefferStroke
 
 def p_binary_op_implication(p):
     'binary_op : IMPLICATION'

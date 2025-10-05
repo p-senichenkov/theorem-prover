@@ -209,3 +209,6 @@ __marimo__/
 # YACC output
 parser.out
 parsetab.py
+
+# Logs
+latest.log
