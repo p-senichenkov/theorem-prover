@@ -1,8 +1,8 @@
-from unittest import TestCase, main
+from unittest import TestCase
 
-from formula_representation import *
-from transformations import *
-from logger_conf import configure_logger
+from src.model.formula_representation import *
+from src.core.transformations import *
+from src.config.logger_conf import configure_logger
 
 CHARS = {
         'exists': '∃',
@@ -64,6 +64,7 @@ class TransformationsTests(TestCase):
         self.assertEqual(actual, expected)
 
     def test_standartize_var_names(self):
+        Variable.reset_counter()
         formula = Or([
             Variable('x'),                              # x is free -- not replacing
             Forall(Variable('x'), And([                 # x is quantifier's variable -- replacing with tmp0
@@ -76,30 +77,35 @@ class TransformationsTests(TestCase):
             ])
         expected = '(v_x) or (forall v_tmp0 ((exists v_tmp1 (v_y)) and (forall v_tmp2 ' + \
                 f'(v_tmp0)) and (forall v_tmp3 (c_{repr('x')})) and (v_tmp0))) or (v_x)'
-        actual = repr(standartize_var_names(formula))
+        actual = repr(standartize_var_names(formula, set()))
         self.assertEqual(actual, expected)
 
     def test_skolemize_1(self):
+        SkolemovConstant.reset_counter()
         formula = Exists(Variable('x'), Or([
-            Equals([Variable('x'), Variable('z')]), Exists(Variable('x'), Not([
+            Equals([Variable('x'), Variable('z')]),
+            Exists(Variable('x'), Not([
                 Equals([Variable('x'), Variable('z')])
-                                                                              ]))
-                                                           ]))
+                                      ]))
+                                           ]))
         expected = '(equals(sc_\'c0\', v_z)) or (not(equals(sc_\'c1\', v_z)))'
-        actual = repr(skolemize(formula))
+        actual = repr(skolemize(formula, []))
         self.assertEqual(actual, expected)
 
     def test_skolemize_2(self):
+        SkolemovFunction.reset_counter()
         formula = Forall(Variable('y'),
             Exists(Variable('x'),
                 CustomFunctionOrPredicate('P', [Variable('x'), Variable('y')])
                 )
             )
         expected = 'forall v_y (cfp_P(sf_f0(v_y), v_y))'
-        actual = repr(skolemize(formula))
+        actual = repr(skolemize(formula, []))
         self.assertEqual(actual, expected)
 
     def test_skolemize_3(self):
+        SkolemovConstant.reset_counter()
+        SkolemovFunction.reset_counter()
         formula = Exists(Variable('x0'),
             Forall(Variable('y1'),
                 Exists(Variable('x1'),
@@ -114,7 +120,7 @@ class TransformationsTests(TestCase):
                     )
                 )
             )
-        expected = 'forall v_y1 (forall v_y2 (cfp_P(sc_\'c2\', sf_f1(v_y1), sf_f2(v_y1, v_y2), ' + \
+        expected = 'forall v_y1 (forall v_y2 (cfp_P(sc_\'c0\', sf_f0(v_y1), sf_f1(v_y1, v_y2), ' + \
                 'v_y1, v_y2)))'
         # Variables somehow become [y] without [] here
         actual = repr(skolemize(formula, []))
@@ -275,8 +281,3 @@ class TransformationsTests(TestCase):
         expected = ['equals(v_x, v_y)', 'v_z', '(v_t) or (v_p)']
         actual = list(map(repr, break_to_clauses(formula)))
         self.assertEqual(actual, expected)
-
-if __name__ == '__main__':
-    configure_logger()
-
-    main()

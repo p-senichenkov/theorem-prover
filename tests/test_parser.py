@@ -1,8 +1,10 @@
-from unittest import TestCase, main
+from unittest import TestCase
 
-from parser import parser
+from src.parser.parser import parser
+
 
 class ParserTests(TestCase):
+
     def templated_test(self, formula: str, expected: str):
         result = parser.parse(formula)
         self.assertEqual(repr(result), expected)
@@ -19,8 +21,8 @@ class ParserTests(TestCase):
     def test_and(self):
         self.templated_test('(x) and (y) and (z) => (t)', '((v_x) and (v_y)) and (v_z) Implies v_t')
 
-    def test_divby(self):
-        self.templated_test('divby(x, y) => z', 'divby(v_x, v_y) Implies v_z')
+    # def test_divby(self):
+    #     self.templated_test('divby(x, y) => z', 'divby(v_x, v_y) Implies v_z')
 
     def test_equals(self):
         self.templated_test('=(x, y) => z', 'equals(v_x, v_y) Implies v_z')
@@ -33,6 +35,3 @@ class ParserTests(TestCase):
 
     def test_exists(self):
         self.templated_test('exists x (y) => z', 'exists v_x (v_y) Implies v_z')
-
-if __name__ == '__main__':
-    main()

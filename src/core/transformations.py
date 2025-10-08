@@ -1,6 +1,7 @@
-from formula_representation import *
-
 from logging import getLogger
+
+from src.model.formula_representation import *
+from src.util import transform_children, replace_free_variable
 
 logger = getLogger(__name__)
 

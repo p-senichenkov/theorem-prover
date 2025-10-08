@@ -1,8 +1,8 @@
 from sys import argv
 
-from parser import parser
-from resolution import Resolution, TransformationInfo
-from logger_conf import configure_logger
+from src.parser.parser import parser
+from src.core.resolution import Resolution, TransformationInfo
+from src.config.logger_conf import configure_logger
 
 
 def print_step_by_step(trans_info: list[TransformationInfo]) -> None:
