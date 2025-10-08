@@ -1,5 +1,8 @@
 from typing import Any
 from collections.abc import Sequence
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class Token:
@@ -138,11 +141,19 @@ class SkolemovConstant(Atom):
 class SkolemovFunction(SymbolTemplate):
     counter = 0
 
-    def __init__(self, args: list[Variable]):
-        self.unicode_repr = 'f' + str(SkolemovFunction.counter)
+    def __init__(self, args: list[Variable], name: str = ""):
+        if len(name) > 0:
+            self.unicode_repr = name
+        else:
+            self.unicode_repr = 'f' + str(SkolemovFunction.counter)
+            SkolemovFunction.counter += 1
         self.text_repr = f'sf_{self.unicode_repr}'
-        SkolemovFunction.counter += 1
-        self.args = args
+        self.args = args[:]
+
+    def replace_child(self, i: int, new_ch: Token):
+        new_args = self.args[:]
+        new_args[i] = new_ch
+        return SkolemovFunction(new_args, self.unicode_repr)
 
 
 class Quantifier(Token):
@@ -247,19 +258,19 @@ class NaryLogicalOp(LogicalOp):
 class ImplicationSign(Token):
 
     def __init__(self, left: Token | Sequence[Token] | None, right: Token | Sequence[Token]):
-        if left is None or isinstance(left, list) and len(left) == 0:
-            self.left = Constant(True)
-        elif isinstance(left, Token):
-            self.left = left
-        else:
-            self.left = And(left)
 
-        if right is None or isinstance(right, list) and len(right) == 0:
-            self.right = Constant(False)
-        elif isinstance(right, Token):
-            self.right = right
-        else:
-            self.right = And(right)
+        def convert_side(side: Token | Sequence[Token] | None):
+            if side is None or isinstance(side, list) and len(side) == 0:
+                return Constant(True)
+            elif isinstance(side, Token):
+                return side
+            elif isinstance(side, list) and len(side) == 1:
+                return side[0]
+            else:
+                return And(side)
+
+        self.left = convert_side(left)
+        self.right = convert_side(right)
 
     def children(self):
         return [self.left, self.right]
@@ -278,6 +289,7 @@ class ImplicationSign(Token):
 
 # Replace free occurences of var with term. Used in skolemization
 def replace_free_variable(formula: Token, var: Variable, term: Token) -> Token:
+    logger.debug(f'Replacing free occurences of {var} with {term} in {formula}...')
     if isinstance(formula, Variable):
         if formula == var:
             return term
@@ -300,11 +312,12 @@ class Exists(Quantifier):
     unicode_repr = '∃'
     text_repr = 'exists'
 
-    def remove(self, num_foralls: int) -> Token:
-        if num_foralls == 0:
+    def remove(self, variables: list[Variable] = []) -> Token:
+        if len(variables) == 0:
             return replace_free_variable(self.body, self.var, SkolemovConstant())
-        # TODO: skolemov functions
-        raise NotImplementedError()
+        sk_fun = SkolemovFunction(variables)
+        logger.debug(f'Created Skolemov fucntion: {sk_fun}')
+        return replace_free_variable(self.body, self.var, sk_fun)
 
 
 class Forall(Quantifier):
@@ -313,10 +326,6 @@ class Forall(Quantifier):
 
     def remove(self) -> Token:
         return self.body
-
-
-# Concrete functions
-# TODO
 
 
 # Concrete predicates

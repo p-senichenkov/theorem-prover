@@ -79,15 +79,45 @@ class TransformationsTests(TestCase):
         actual = repr(standartize_var_names(formula))
         self.assertEqual(actual, expected)
 
-    def test_skolemize(self):
-        # TODO: skolemov functions
+    def test_skolemize_1(self):
         formula = Exists(Variable('x'), Or([
             Equals([Variable('x'), Variable('z')]), Exists(Variable('x'), Not([
                 Equals([Variable('x'), Variable('z')])
                                                                               ]))
                                                            ]))
-        expected = '(equals(sc_c0, v_z)) or (not(equals(sc_c1, v_z)))'
+        expected = '(equals(sc_\'c0\', v_z)) or (not(equals(sc_\'c1\', v_z)))'
         actual = repr(skolemize(formula))
+        self.assertEqual(actual, expected)
+
+    def test_skolemize_2(self):
+        formula = Forall(Variable('y'),
+            Exists(Variable('x'),
+                CustomFunctionOrPredicate('P', [Variable('x'), Variable('y')])
+                )
+            )
+        expected = 'forall v_y (cfp_P(sf_f0(v_y), v_y))'
+        actual = repr(skolemize(formula))
+        self.assertEqual(actual, expected)
+
+    def test_skolemize_3(self):
+        formula = Exists(Variable('x0'),
+            Forall(Variable('y1'),
+                Exists(Variable('x1'),
+                    Forall(Variable('y2'),
+                        Exists(Variable('x2'),
+                            CustomFunctionOrPredicate('P', [
+                                Variable('x0'), Variable('x1'), Variable('x2'),
+                                Variable('y1'), Variable('y2')
+                                ])
+                            )
+                        )
+                    )
+                )
+            )
+        expected = 'forall v_y1 (forall v_y2 (cfp_P(sc_\'c2\', sf_f1(v_y1), sf_f2(v_y1, v_y2), ' + \
+                'v_y1, v_y2)))'
+        # Variables somehow become [y] without [] here
+        actual = repr(skolemize(formula, []))
         self.assertEqual(actual, expected)
 
     def test_remove_foralls(self):

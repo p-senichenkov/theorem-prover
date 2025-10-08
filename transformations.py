@@ -50,17 +50,17 @@ def standartize_var_names(formula: Token, known_names: set[str] = set()) -> Toke
 
 
 # 4. Get rid of existance quantifier ("skolemize")
-def skolemize(formula: Token, num_foralls: int = 0) -> Token:
+def skolemize(formula: Token, universal_variables: list[Variable] = []) -> Token:
     if isinstance(formula, Exists):
-        formula = formula.remove(num_foralls)
-        return skolemize(formula)
+        formula = formula.remove(universal_variables)
+        return skolemize(formula, universal_variables)
     elif isinstance(formula, Forall):
-        num_foralls += 1
+        universal_variables.append(formula.get_var())
 
     children = formula.children()
     for i in range(len(children)):
         child = children[i]
-        formula = formula.replace_child(i, skolemize(child, num_foralls))
+        formula = formula.replace_child(i, skolemize(child, universal_variables))
     return formula
 
 

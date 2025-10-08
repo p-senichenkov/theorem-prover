@@ -56,7 +56,7 @@ def t_CUSTOM_FUNCTION_OR_PREDICATE(t):
     return t
 
 def t_VARIABLE(t):
-    r'[a-zA-Z]+'
+    r'[a-zA-Z][a-zA-Z0-9]*'
     t.type = ascii_ops.get(t.value, 'VARIABLE')
     return t
 
