@@ -25,4 +25,4 @@ from src.model.concrete.equivalence import Equivalence
 from src.model.concrete.xor import Xor
 
 # Typedefs
-Clause = Or | Not | Atom
+Clause = Or | Not | Atom | FunctionOrPredicate

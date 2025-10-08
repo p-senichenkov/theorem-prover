@@ -1,11 +1,11 @@
 from collections.abc import Sequence
 
 from src.model.abstract.token import Token
-from src.model.abstract.symbol_template import SymbolTemplate
+from src.model.abstract.function_or_predicate import FunctionOrPredicate
 from src.model.concrete.variable import Variable
 
 
-class SkolemovFunction(SymbolTemplate):
+class SkolemovFunction(FunctionOrPredicate):
     counter = 0
 
     # For testing purposes only
@@ -28,3 +28,6 @@ class SkolemovFunction(SymbolTemplate):
         new_args = self.args[:]
         new_args[i] = new_ch
         return SkolemovFunction(new_args, self.unicode_repr)
+
+    def get_args(self) -> Sequence[Variable]:
+        return self.args

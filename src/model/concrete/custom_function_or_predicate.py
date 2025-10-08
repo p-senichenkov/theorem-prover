@@ -23,7 +23,11 @@ class CustomFunctionOrPredicate(FunctionOrPredicate):
         return CustomFunctionOrPredicate(self.unicode_repr, new_args)
 
     def __eq__(self, other: Token) -> bool:
-        return isinstance(other, CustomFunctionOrPredicate) and \
-                self.unicode_repr == other.unicode_repr and self.args == other.args
+        return isinstance(other, CustomFunctionOrPredicate
+                          ) and self.unicode_repr == other.unicode_repr and self.args == other.args
 
     __hash__ = Token.__hash__
+
+    def stem_eq(self, other) -> bool:
+        return isinstance(other,
+                          CustomFunctionOrPredicate) and self.unicode_repr == other.unicode_repr
