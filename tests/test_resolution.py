@@ -6,6 +6,7 @@ from src.core.predicate_resolution import PredicateResolution
 from src.core.resolution import Resolution
 from src.core.skolemov_function_resolution import SkolemovFunctionResolution
 from src.config.logger_conf import configure_logger
+from src.util import recursively_substitute
 
 
 class ResolutionTests(TestCase):
@@ -56,7 +57,7 @@ class ResolutionTests(TestCase):
             const_2,
         ])
         expected = f'(not(c_True)) or (c_\'x\') or (v_y) or (c_True) or ({repr(const_2)})'
-        actual = repr(PredicateResolution.substitute_sk_const(clause, Constant(True), const_1))
+        actual = repr(recursively_substitute(clause, Constant(True), const_1))
         self.assertEqual(actual, expected)
 
     def test_predicate_resolution_1(self):
@@ -182,3 +183,17 @@ class ResolutionTests(TestCase):
         answ, actual = SkolemovFunctionResolution.try_unify(a, b)
         self.assertFalse(answ)
         self.assertEqual(len(actual), 0)
+
+    def test_sk_fun_try_unify_6(self):
+        '''Substitute x | f(y) | t -> x | y | z | t'''
+        a = Or([Variable('x'), Variable('y'), Variable('z'), Variable('t')])
+        sk_fun = SkolemovFunction([Variable('y')])
+        b = Or([Variable('x'), sk_fun, Variable('t')])
+        expected_sk_fun = repr(sk_fun)
+        expected_term = '(v_y) or (v_z)'
+        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+        self.assertTrue(answ)
+        self.assertEqual(len(actual), 1)
+        front = actual[0]
+        self.assertEqual(repr(front.sk_fun), expected_sk_fun)
+        self.assertEqual(repr(front.term), expected_term)

@@ -61,3 +61,8 @@ def replace_free_variable(formula: Token, var: Variable, term: Token) -> Token:
             return formula
 
     return transform_children(formula, lambda ch: replace_free_variable(ch, var, term))
+
+
+def recursively_substitute(formula: Token, source: Token, dest: Token) -> Token:
+    '''Substitute source instead of all occurences of dest in formula'''
+    return recursively_transform_children(formula, lambda x: source if x == dest else x)

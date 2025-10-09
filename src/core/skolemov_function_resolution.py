@@ -14,7 +14,6 @@ class SkolemovFunctionResolution:
     clauses = []
     branches_info = []
 
-    # Returns empty list if clauses cannot be unified
     @staticmethod
     def try_unify(a: Clause, b: Clause) -> (bool, list[Replacement]):
         logger.debug(f'Trying to unify {a} and {b}...')
@@ -31,6 +30,26 @@ class SkolemovFunctionResolution:
             return True, [Replacement(a, b)]
         if isinstance(b, SkolemovFunction):
             return SkolemovFunctionResolution.try_unify(b, a)
+        # Cases like a | sf(b) | d -> a | b | c | d
+        if isinstance(a, NaryLogicalOp) and isinstance(b, NaryLogicalOp) and type(a) == type(b):
+            logger.debug('\tN-ary case')
+            a_ch = a.children()
+            b_ch = b.children()
+            unique_a_ch = list(set(a_ch) - set(b_ch))
+            if len(unique_a_ch) == 1:
+                unique_a_ch = unique_a_ch[0]
+            else:
+                unique_a_ch = type(a)(sorted(unique_a_ch, key=lambda ch: repr(ch)))
+            unique_b_ch = list(set(b_ch) - set(a_ch))
+            if len(unique_b_ch) == 1:
+                unique_b_ch = unique_b_ch[0]
+            else:
+                unique_b_ch = type(b)(sorted(unique_b_ch, key=lambda ch: repr(ch)))
+            if isinstance(unique_a_ch, SkolemovFunction):
+                return True, [Replacement(unique_a_ch, unique_b_ch)]
+            if isinstance(unique_b_ch, SkolemovFunction):
+                return True, [Replacement(unique_b_ch, unique_a_ch)]
+            return False, []
         if a.stem_eq(b):
             a_ch = a.children()
             b_ch = b.children()
@@ -43,3 +62,8 @@ class SkolemovFunctionResolution:
                     replacements += res[1]
                 return True, replacements
         return False, []
+
+    def skolemov_function_resolution(self):
+        for clause_a in self.clauses:
+            for clause_b in self.clauses:
+                replacements = try_unify(clause_a, clause_b)

@@ -1,7 +1,7 @@
 from logging import getLogger
 
 from src.model.formula_representation import *
-from src.util import recursive_instances, recursively_transform_children
+from src.util import recursive_instances, recursively_substitute
 
 logger = getLogger(__name__)
 
@@ -10,12 +10,6 @@ class PredicateResolution:
 
     def __init__(self, clauses: list[Clause]):
         self.clauses = clauses
-
-    @staticmethod
-    def substitute_sk_const(formula: Token, source: Variable | Constant,
-                            dest: SkolemovConstant | Variable) -> Token:
-        '''Substitute source instead of all occurences of dest in formula'''
-        return recursively_transform_children(formula, lambda x: source if x == dest else x)
 
     @staticmethod
     def predicate_resolution_branches(lhs: Token, neg_rhs: Token) -> bool:
@@ -38,8 +32,9 @@ class PredicateResolution:
 
         def sub(source: Variable | Constant, dest: SkolemovConstant | Variable) -> None:
             logger.debug(f'\tSubstituting {source} instead of {dest}...')
-            branches.append((PredicateResolution.substitute_sk_const(lhs, source, dest),
-                             PredicateResolution.substitute_sk_const(neg_rhs, source, dest)))
+            branches.append(
+                (recursively_substitute(lhs, source,
+                                        dest), recursively_substitute(neg_rhs, source, dest)))
 
         # Substitute constants and variables instead of Skolemov constants
         for var in vars + consts:

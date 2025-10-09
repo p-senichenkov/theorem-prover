@@ -8,12 +8,10 @@ class Variable(Atom):
     # For testing purposes only
     @staticmethod
     def reset_counter():
-        print('\tCounter reset.')
         Variable.counter = 0
 
     @staticmethod
     def new_name():
-        print(f'Creating new name: tmp{Variable.counter}')
         name = 'tmp' + str(Variable.counter)
         Variable.counter += 1
         return name
