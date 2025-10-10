@@ -14,9 +14,6 @@ class CustomFunctionOrPredicate(FunctionOrPredicate):
         self.text_repr = f'cfp_{name}'
         self.args = args
 
-    def apply_axioms(self) -> Sequence[Token]:
-        return [self]
-
     def replace_child(self, i: int, new_ch: Token):
         new_args = self.args[:]
         new_args[i] = new_ch

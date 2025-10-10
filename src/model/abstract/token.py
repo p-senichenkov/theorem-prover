@@ -3,6 +3,7 @@ from collections.abc import Sequence
 
 # Base class for all that can appear in formula
 class Token:
+    has_axioms = False
 
     def __str__(self):
         raise NotImplementedError(f'Unknown token: {type(self)}')
@@ -31,3 +32,6 @@ class Token:
     # Remove all kinds of redundancy (depending on type)
     def remove_redundancy(self):
         return self
+
+    def apply_axioms(self, entire_formula):
+        raise TypeError(f'{type(self)} has no axioms!')

@@ -25,6 +25,8 @@ if __name__ == '__main__':
     resolution = Resolution(formula)
     result = resolution.resolution()
 
+    print(f'* {formula} *')
+
     print_step_by_step(resolution.get_transformations_info())
 
     branch_infos = resolution.get_branch_info()
@@ -45,7 +47,7 @@ if __name__ == '__main__':
             print(f'Branch {i}:')
             print(f'\tLhs: {branch_info.lhs}')
             print(f'\tRhs: {branch_info.neg_rhs}')
-            if len(br.resolution_steps) == 0:
+            if len(branch_info.resolution_steps) == 0:
                 print('Resolution cannot be applied.')
             else:
                 print('\tResolution steps:')

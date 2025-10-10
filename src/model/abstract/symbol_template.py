@@ -6,12 +6,12 @@ from src.model.abstract.token import Token
 class SymbolTemplate(Token):
     unicode_repr = ''
     text_repr = ''
+    num_args = -1
 
     def __init__(self, args: Sequence[Token]):
+        if num_args >= 0:
+            assert len(args) == num_args
         self.args = args
-
-    def apply_axioms(self) -> Sequence[Token]:
-        pass
 
     def children(self):
         return self.args

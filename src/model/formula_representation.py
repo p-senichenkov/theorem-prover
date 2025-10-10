@@ -7,7 +7,7 @@ from src.model.abstract.logical_op import LogicalOp
 from src.model.abstract.nary_logical_op import NaryLogicalOp
 
 from src.model.concrete.variable import Variable
-from src.model.concrete.constant import Constant
+from src.model.concrete.constant import Constant, CONSTANT_TRUE, CONSTANT_FALSE
 from src.model.concrete.skolemov_constant import SkolemovConstant
 from src.model.concrete.skolemov_function import SkolemovFunction
 from src.model.concrete.custom_function_or_predicate import CustomFunctionOrPredicate

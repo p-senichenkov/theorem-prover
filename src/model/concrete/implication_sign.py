@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from src.model.abstract.token import Token
 from src.model.concrete.and_or_not import And
+from src.model.concrete.constant import Constant
 
 
 class ImplicationSign(Token):

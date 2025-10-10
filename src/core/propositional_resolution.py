@@ -73,7 +73,7 @@ class PropositionalResolution:
         self.clauses = list(set(self.clauses))
         self.clauses = list(filter(lambda x: x is not None, self.clauses))
         self.clauses = list(
-            filter(lambda x: not isinstance(x, Constant) or not x.is_const_true(), self.clauses))
+            filter(lambda x: not isinstance(x, Constant) or not x == CONSTANT_TRUE, self.clauses))
         self.clauses.sort(key=lambda token: len(token.children()))
 
     def propositional_resolution(self) -> bool:

@@ -9,6 +9,7 @@ from src.model.concrete.multiply import Multiply
 class DivisibleBy(FunctionOrPredicate):
     unicode_repr = '⋮'
     text_repr = 'divby'
+    has_axioms = True
 
     def apply_axioms(self) -> list[Token]:
         # a \divby b => \exists m (a = m * b)

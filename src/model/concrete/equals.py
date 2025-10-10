@@ -5,6 +5,7 @@ from src.model.concrete.constant import Constant
 class Equals(FunctionOrPredicate):
     unicode_repr = '='
     text_repr = 'equals'
+    has_axioms = True
 
     # TODO: how to apply axiom (a = b * c), (b = d * e) => (a = c * d * e)?
 
