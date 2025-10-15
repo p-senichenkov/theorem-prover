@@ -19,7 +19,7 @@ quantifier : FORALL
            | EXISTS
 
 op_appl : (clause) binary_op (clause)
-        | nary_op_and_appl: TODO: skip for now
+        | nary_op_and_appl
         | prefix_op(comma_separated_list)
         | atom
         | empty
@@ -30,7 +30,6 @@ binary_op : PIERCE_ARROW
           | EQUIV
           | XOR
 
-# TODO:
 nary_op_and_appl : nary_op_and_appl nary_op (op_appl)
                  | (op_appl)
 
