@@ -111,6 +111,7 @@ class Or(NaryLogicalOp):
 class Not(LogicalOp):
     unicode_repr = '¬'
     text_repr = 'not'
+    operands_num = 1
 
     def narrow(self) -> Token:
         operand = self.operands[0]

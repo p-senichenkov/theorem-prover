@@ -1,18 +1,22 @@
-import logging
+from logging import getLogger
 
 from src.model.formula_representation import *
 from src.core.transformations import *
 from src.util import recursively_transform_children, recursive_search, recursive_instances
 from src.core.propositional_resolution import PropositionalResolution
 from src.core.predicate_resolution import PredicateResolution
-from src.core.resolution_info import BranchInfo, TransformationInfo
+from src.core.resolution_info import BranchInfo, TransformationInfo, ResolutionStep
+from src.core.unification import Unification, short_first
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Resolution:
     transformations_info = []
     branches_info = []
+    resolution_steps = []
+    clauses_left = []
+    first_clauses = []
 
     def transofrm(self, formula: Token) -> (Token, Token):
         if not isinstance(formula, ImplicationSign):
@@ -66,36 +70,44 @@ class Resolution:
     def __init__(self, formula: Token):
         self.formula = formula
 
+    @staticmethod
+    def comb_clauses(clauses: list[Clause]) -> None:
+        child_key = lambda ch: ch.name if isinstance(ch, Variable) else ''
+        sort_children = lambda clause: Or(sorted(clause.children(), key=child_key)) if \
+                isinstance(clause, Or) else clause
+
+        clauses = list(map(sort_children, clauses))
+        clauses = list(set(clauses))
+        clauses = list(filter(lambda x: x is not None, clauses))
+        clauses = list(
+            filter(lambda x: not isinstance(x, Constant) or not x == CONSTANT_TRUE, clauses))
+        clauses.sort(key=short_first)
+        return clauses
+
     def resolution(self) -> bool:
-        was_predicate = recursive_search(self.formula, lambda t: isinstance(t, Quantifier))
-
         lhs, neg_rhs = self.transofrm(self.formula)
-
-        constains_sc = lambda f: recursive_search(f, lambda t: isinstance(t, SkolemovConstant))
-        branches = [(lhs, neg_rhs)]
-        if was_predicate or constains_sc(lhs) or constains_sc(neg_rhs):
-            logger.debug('Got predicate formula. Trying branches...')
-            branches += PredicateResolution.predicate_resolution_branches(lhs, neg_rhs)
-        else:
-            logger.debug('Got propositional formula. Trying to resolve directly...')
-        logger.debug(f'Resolution branches:')
-        for i in range(len(branches)):
-            logger.debug(f'{i}. {branches[i]}')
-        self.branches_info = [BranchInfo(br[0], br[1], 'not tried', []) for br in branches]
-
-        for i in range(len(branches)):
-            logger.debug(f'Trying branch {i}...')
-            prop_res = PropositionalResolution(branches[i][0], branches[i][1])
-            self.branches_info[i].resolution_steps = prop_res.get_resolution_steps()
-            if prop_res.propositional_resolution():
-                self.branches_info[i].clauses_left = 'proved'
-                return True
-            else:
-                self.branches_info[i].res = prop_res.get_clauses()
-        return False
+        clauses = Resolution.comb_clauses(break_to_clauses(lhs) + break_to_clauses(neg_rhs))
+        self.first_clauses = clauses[:]
+        while len(clauses) > 0:
+            step = Unification.try_apply_resolution(clauses)
+            if step is None:
+                self.clauses_left = clauses
+                return False
+            self.resolution_steps.append(step)
+            clauses = Resolution.comb_clauses(step.new_clauses())
+        return True
 
     def get_branch_info(self) -> list[BranchInfo]:
         return self.branches_info
 
     def get_transformations_info(self) -> list[TransformationInfo]:
         return self.transformations_info
+
+    def get_first_clauses(self) -> list[Clause]:
+        return self.first_clauses
+
+    def get_resolution_steps(self) -> list[ResolutionStep]:
+        return self.resolution_steps
+
+    def get_clauses_left(self) -> list[Clause]:
+        return self.clauses_left

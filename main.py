@@ -1,16 +1,39 @@
 from sys import argv
+from typing import Any
+from logging import getLogger
 
 from src.parser.parser import parser
 from src.core.resolution import Resolution, TransformationInfo
 from src.config.logger_conf import configure_logger
+from src.core.resolution_info import ResolutionStep
+
+logger = getLogger('__main__')
 
 
-def print_step_by_step(trans_info: list[TransformationInfo]) -> None:
+def clauses_to_str(clauses: list[Any]) -> str:
+    return ', '.join(list(map(str, clauses)))
+
+
+def print_transformations(trans_info: list[TransformationInfo]) -> None:
     print('** Formula transformations **')
     for i in range(len(trans_info)):
         tr_info = trans_info[i]
         print(f'{i}. {tr_info.text}:')
         print(f'\t{tr_info.lhs}   {tr_info.neg_rhs}')
+
+
+def print_res_steps(res_steps: list[ResolutionStep]) -> None:
+    print('** Resolution **')
+    if len(res_steps) == 0:
+        print('Resolution cannot be applied')
+    else:
+        for step in res_steps:
+            logger.debug(f'{step!r}')
+            print(step)
+            clauses = Resolution.comb_clauses(step.new_clauses())
+            if len(clauses) > 0:
+                print(f'Clauses: {clauses_to_str(clauses)}')
+            print()
 
 
 if __name__ == '__main__':
@@ -26,33 +49,9 @@ if __name__ == '__main__':
     result = resolution.resolution()
 
     print(f'* {formula} *')
-
-    print_step_by_step(resolution.get_transformations_info())
-
-    branch_infos = resolution.get_branch_info()
-    if len(branch_infos) == 1:
-        br = branch_infos[0]
-        print('** Resolution **')
-        print(f'Lhs: {br.lhs}')
-        print(f'Negated Rhs: {br.neg_rhs}')
-        if len(br.resolution_steps) == 0:
-            print('Resolution cannot be applied.')
-        else:
-            print('Resolution steps:')
-            br.print_resolution_steps(1)
-    else:
-        print('** Branches **')
-        for i in range(len(branch_infos)):
-            branch_info = branch_infos[i]
-            print(f'Branch {i}:')
-            print(f'\tLhs: {branch_info.lhs}')
-            print(f'\tRhs: {branch_info.neg_rhs}')
-            if len(branch_info.resolution_steps) == 0:
-                print('Resolution cannot be applied.')
-            else:
-                print('\tResolution steps:')
-                branch_info.print_resolution_steps(2)
-            print(f'\tResult: {branch_info.string_res()}')
+    print_transformations(resolution.get_transformations_info())
+    print(f'Clauses: {clauses_to_str(resolution.get_first_clauses())}\n')
+    print_res_steps(resolution.get_resolution_steps())
 
     if (result):
         print('Formula proved.')

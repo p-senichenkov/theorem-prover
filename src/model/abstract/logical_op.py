@@ -6,9 +6,12 @@ from src.model.abstract.token import Token
 class LogicalOp(Token):
     unicode_repr = ''
     text_repr = ''
+    operands_num = -1
 
     def __init__(self, operands: Sequence[Token]):
         assert isinstance(operands, Sequence)
+        if self.operands_num >= 0:
+            assert len(operands) == self.operands_num
 
         self.operands = operands
 

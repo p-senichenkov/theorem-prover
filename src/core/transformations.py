@@ -132,11 +132,8 @@ def remove_redundancy_rec(formula: Token) -> Token:
 
 def remove_redundancy(formula: Token) -> Token:
     while True:
-        logger.debug(f'\tFormula: {formula}')
         new_formula = remove_redundancy_rec(formula)
-        logger.debug(f'\t\tNew formula: {new_formula}')
         if new_formula == formula:
-            logger.debug('\t\tEqual')
             return formula
         formula = new_formula
 

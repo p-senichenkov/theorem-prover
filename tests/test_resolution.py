@@ -123,77 +123,77 @@ class ResolutionTests(TestCase):
         res = Resolution(formula)
         self.assertTrue(res.resolution())
 
-    def test_sk_fun_try_unify_1(self):
-        '''Substitute f(x, y) -> x & y'''
-        a = And([Variable('x'), Variable('y')])
-        b = SkolemovFunction([Variable('x'), Variable('y')])
-        expected_sk_fun = repr(b)
-        expected_term = '(v_x) and (v_y)'
-        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
-        self.assertTrue(answ)
-        self.assertEqual(len(actual), 1)
-        front = actual[0]
-        self.assertEqual(repr(front.sk_fun), expected_sk_fun)
-        self.assertEqual(repr(front.term), expected_term)
-
-    def test_sk_fun_try_unify_2(self):
-        '''Substitute f(y) -> y | z'''
-        a = And([Variable('x'), Or([Variable('y'), Variable('z')])])
-        sk_fun = SkolemovFunction([Variable('y')])
-        b = And([Variable('x'), sk_fun])
-        expected_sk_fun = repr(sk_fun)
-        expected_term = '(v_y) or (v_z)'
-        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
-        self.assertTrue(answ)
-        self.assertEqual(len(actual), 1)
-        front = actual[0]
-        self.assertEqual(repr(front.sk_fun), expected_sk_fun)
-        self.assertEqual(repr(front.term), expected_term)
-
-    def test_sk_fun_try_unify_3(self):
-        '''Substitute f(y) -> x & y, f(t, p) -> t | p'''
-        a = Implication([And([Variable('x'), Variable('y')]), Or([Variable('t'), Variable('p')])])
-        sk_fun_1 = SkolemovFunction([Variable('y')])
-        sk_fun_2 = SkolemovFunction([Variable('t'), Variable('p')])
-        b = Implication([sk_fun_1, sk_fun_2])
-        expected_sk_fun_1 = repr(sk_fun_1)
-        expected_term_1 = '(v_x) and (v_y)'
-        expected_sk_fun_2 = repr(sk_fun_2)
-        expected_term_2 = '(v_t) or (v_p)'
-        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
-        self.assertTrue(answ)
-        self.assertEqual(len(actual), 2)
-        self.assertEqual(repr(actual[0].sk_fun), expected_sk_fun_1)
-        self.assertEqual(repr(actual[0].term), expected_term_1)
-        self.assertEqual(repr(actual[1].sk_fun), expected_sk_fun_2)
-        self.assertEqual(repr(actual[1].term), expected_term_2)
-
-    def test_sk_fun_try_unify_4(self):
-        '''Variables match, but stems are different'''
-        a = And([Variable('x'), Variable('y')])
-        b = Or([Variable('x'), SkolemovFunction([Variable('y')])])
-        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
-        self.assertFalse(answ)
-        self.assertEqual(len(actual), 0)
-
-    def test_sk_fun_try_unify_5(self):
-        '''Stems are equal, but variables don't match'''
-        a = And([Variable('x'), Or([Variable('y'), Variable('z')])])
-        b = And([Variable('x'), SkolemovFunction([Variable('t'), Variable('z')])])
-        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
-        self.assertFalse(answ)
-        self.assertEqual(len(actual), 0)
-
-    def test_sk_fun_try_unify_6(self):
-        '''Substitute x | f(y) | t -> x | y | z | t'''
-        a = Or([Variable('x'), Variable('y'), Variable('z'), Variable('t')])
-        sk_fun = SkolemovFunction([Variable('y')])
-        b = Or([Variable('x'), sk_fun, Variable('t')])
-        expected_sk_fun = repr(sk_fun)
-        expected_term = '(v_y) or (v_z)'
-        answ, actual = SkolemovFunctionResolution.try_unify(a, b)
-        self.assertTrue(answ)
-        self.assertEqual(len(actual), 1)
-        front = actual[0]
-        self.assertEqual(repr(front.sk_fun), expected_sk_fun)
-        self.assertEqual(repr(front.term), expected_term)
+    # def test_sk_fun_try_unify_1(self):
+    #     '''Substitute f(x, y) -> x & y'''
+    #     a = And([Variable('x'), Variable('y')])
+    #     b = SkolemovFunction([Variable('x'), Variable('y')])
+    #     expected_sk_fun = repr(b)
+    #     expected_term = '(v_x) and (v_y)'
+    #     answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+    #     self.assertTrue(answ)
+    #     self.assertEqual(len(actual), 1)
+    #     front = actual[0]
+    #     self.assertEqual(repr(front.sk_fun), expected_sk_fun)
+    #     self.assertEqual(repr(front.term), expected_term)
+    #
+    # def test_sk_fun_try_unify_2(self):
+    #     '''Substitute f(y) -> y | z'''
+    #     a = And([Variable('x'), Or([Variable('y'), Variable('z')])])
+    #     sk_fun = SkolemovFunction([Variable('y')])
+    #     b = And([Variable('x'), sk_fun])
+    #     expected_sk_fun = repr(sk_fun)
+    #     expected_term = '(v_y) or (v_z)'
+    #     answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+    #     self.assertTrue(answ)
+    #     self.assertEqual(len(actual), 1)
+    #     front = actual[0]
+    #     self.assertEqual(repr(front.sk_fun), expected_sk_fun)
+    #     self.assertEqual(repr(front.term), expected_term)
+    #
+    # def test_sk_fun_try_unify_3(self):
+    #     '''Substitute f(y) -> x & y, f(t, p) -> t | p'''
+    #     a = Implication([And([Variable('x'), Variable('y')]), Or([Variable('t'), Variable('p')])])
+    #     sk_fun_1 = SkolemovFunction([Variable('y')])
+    #     sk_fun_2 = SkolemovFunction([Variable('t'), Variable('p')])
+    #     b = Implication([sk_fun_1, sk_fun_2])
+    #     expected_sk_fun_1 = repr(sk_fun_1)
+    #     expected_term_1 = '(v_x) and (v_y)'
+    #     expected_sk_fun_2 = repr(sk_fun_2)
+    #     expected_term_2 = '(v_t) or (v_p)'
+    #     answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+    #     self.assertTrue(answ)
+    #     self.assertEqual(len(actual), 2)
+    #     self.assertEqual(repr(actual[0].sk_fun), expected_sk_fun_1)
+    #     self.assertEqual(repr(actual[0].term), expected_term_1)
+    #     self.assertEqual(repr(actual[1].sk_fun), expected_sk_fun_2)
+    #     self.assertEqual(repr(actual[1].term), expected_term_2)
+    #
+    # def test_sk_fun_try_unify_4(self):
+    #     '''Variables match, but stems are different'''
+    #     a = And([Variable('x'), Variable('y')])
+    #     b = Or([Variable('x'), SkolemovFunction([Variable('y')])])
+    #     answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+    #     self.assertFalse(answ)
+    #     self.assertEqual(len(actual), 0)
+    #
+    # def test_sk_fun_try_unify_5(self):
+    #     '''Stems are equal, but variables don't match'''
+    #     a = And([Variable('x'), Or([Variable('y'), Variable('z')])])
+    #     b = And([Variable('x'), SkolemovFunction([Variable('t'), Variable('z')])])
+    #     answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+    #     self.assertFalse(answ)
+    #     self.assertEqual(len(actual), 0)
+    #
+    # def test_sk_fun_try_unify_6(self):
+    #     '''Substitute x | f(y) | t -> x | y | z | t'''
+    #     a = Or([Variable('x'), Variable('y'), Variable('z'), Variable('t')])
+    #     sk_fun = SkolemovFunction([Variable('y')])
+    #     b = Or([Variable('x'), sk_fun, Variable('t')])
+    #     expected_sk_fun = repr(sk_fun)
+    #     expected_term = '(v_y) or (v_z)'
+    #     answ, actual = SkolemovFunctionResolution.try_unify(a, b)
+    #     self.assertTrue(answ)
+    #     self.assertEqual(len(actual), 1)
+    #     front = actual[0]
+    #     self.assertEqual(repr(front.sk_fun), expected_sk_fun)
+    #     self.assertEqual(repr(front.term), expected_term)

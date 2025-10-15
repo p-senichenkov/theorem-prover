@@ -9,8 +9,8 @@ class SymbolTemplate(Token):
     num_args = -1
 
     def __init__(self, args: Sequence[Token]):
-        if num_args >= 0:
-            assert len(args) == num_args
+        if self.num_args >= 0:
+            assert len(args) == self.num_args
         self.args = args
 
     def children(self):

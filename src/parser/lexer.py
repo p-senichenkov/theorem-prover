@@ -56,8 +56,9 @@ def t_VARIABLE(t):
 
 
 def t_CONSTANT(t):
-    r"['][\S]+[']"
-    t.value = t.value[1:-1]
+    '([\'][\\S]+[\'])|([\"][\\S]+[\"])'
+    if t.value.startswith('\''):
+        t.value = t.value[1:-1]
     return t
 
 
