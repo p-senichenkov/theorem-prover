@@ -78,7 +78,6 @@ You may have noticed that formulas contain a lot of parens.
 So why they cannot be skipped in situations like this: `(x) & (¬(y))` (you may want to write `x & ¬y`)?
 
 Becuase it will make parser much more complicated, and parser here is not the main task.
-You can look into `parser.py` and try to write BNF that will allow to omit parens (don't forget about precedence).
 
 ## Method used and output
 

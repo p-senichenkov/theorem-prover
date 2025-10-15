@@ -3,8 +3,6 @@ from logging import getLogger
 from src.model.formula_representation import *
 from src.core.transformations import *
 from src.util import recursively_transform_children, recursive_search, recursive_instances
-from src.core.propositional_resolution import PropositionalResolution
-from src.core.predicate_resolution import PredicateResolution
 from src.core.resolution_info import BranchInfo, TransformationInfo, ResolutionStep
 from src.core.unification import Unification, short_first
 
@@ -40,8 +38,8 @@ class Resolution:
         logger.info(f'Narrowed negation: {lhs} and {neg_rhs}')
         save_tr_info('Use de-Morgan laws to narrow negation')
 
-        lhs = standartize_var_names(lhs)
-        neg_rhs = standartize_var_names(neg_rhs)
+        lhs = standartize_var_names(lhs, set())
+        neg_rhs = standartize_var_names(neg_rhs, set())
         logger.info(f'Standartized variable names: {lhs} and {neg_rhs}')
         save_tr_info('Rename bound variables so that all variable names are unique')
 
