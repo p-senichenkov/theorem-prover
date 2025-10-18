@@ -35,7 +35,12 @@ i. e. `x` is equvalent to `=> x`.
 
 `->` is a binary logical operation named "implication", it will be replaced with `¬(x) ∨ (y)` later.
 
-Operands of each logical operation should be parenthesized.
+Compound operands of each logical operation should be parenthesized.
+Parens may be ommited when operand is simple, i. e. it's:
+* variable;
+* constant;
+* negation;
+* function or predicate.
 
 Each identifier containing only alphabetical characters, which is not reserved (see table below)
 becomes a variable: `x`, `Someone`.
