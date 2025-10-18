@@ -10,19 +10,21 @@ formula : formula_side IMPLICATION_SIGN formula_side
 formula_side : clause formula_side
              | empty
 
-clause : quantifier_complex
+clause : quantifier VARIABLE parenthesized_clause
        | op_appl
 
-quantifier_complex : quantifier VARIABLE (clause)
+parenthesized_clause : (clause)
+                     | atom
+                     | prefix_op(comma_separated_list)
+                     | prefix_op parenthesized_clause
 
 quantifier : FORALL
            | EXISTS
 
-op_appl : (clause) binary_op (clause)
-        | nary_op_and_appl
-        | prefix_op(comma_separated_list)
-        | atom
-        | empty
+op_appl : parenthessized_clause binary_op parenthesized_clause
+        | parenthesized_clause
+        | and_appl
+        | or_appl
 
 binary_op : PIERCE_ARROW
           | SHEFFER_STROKE
@@ -30,8 +32,11 @@ binary_op : PIERCE_ARROW
           | EQUIV
           | XOR
 
-nary_op_and_appl : nary_op_and_appl nary_op (op_appl)
-                 | (op_appl)
+and_appl : and_appl AND parenthesized_clause
+         | parenthesized_clause AND parenthesized_clause
+
+or_appl : or_appl OR parenthesized_clause
+        | parenthesized_clause OR parenthesized_clause
 
 prefix_op : unary_logical_op
           | function_or_predicate
@@ -42,11 +47,7 @@ comma_separated_list : clause COMMA comma_separated_list
 unary_logical_op : NOT
 
 function_or_predicate : EQUALS
-                      | DIVBY: TODO
                       | CUSTOM_FUCNTION_OR_PREDICATE
-
-nary_op : AND
-        | OR
 
 atom : VARIABLE
      | CONSTANT
@@ -76,8 +77,8 @@ def p_formula_side_empty(p):
 
 
 def p_clause_quantifier_complex(p):
-    'clause : quantifier_complex'
-    p[0] = p[1]
+    'clause : quantifier VARIABLE parenthesized_clause'
+    p[0] = p[1](Variable(p[2]), p[3])
 
 
 def p_clause_op_appl(p):
@@ -85,9 +86,24 @@ def p_clause_op_appl(p):
     p[0] = p[1]
 
 
-def p_quantifier_complex(p):
-    'quantifier_complex : quantifier VARIABLE L_PAREN clause R_PAREN'
-    p[0] = p[1](Variable(p[2]), p[4])
+def p_parenthesized_clause_clause(p):
+    'parenthesized_clause : L_PAREN clause R_PAREN'
+    p[0] = p[2]
+
+
+def p_parenthesized_clause_atom(p):
+    'parenthesized_clause : atom'
+    p[0] = p[1]
+
+
+def p_parenthesized_clause_prefix_appl(p):
+    'parenthesized_clause : prefix_op L_PAREN comma_separated_list R_PAREN'
+    p[0] = p[1](p[3])
+
+
+def p_parenthesized_clause_prefix_short(p):
+    'parenthesized_clause : prefix_op parenthesized_clause'
+    p[0] = p[1]([p[2]])
 
 
 def p_quantifier_forall(p):
@@ -101,27 +117,22 @@ def p_quantifier_exists(p):
 
 
 def p_op_appl_binary(p):
-    'op_appl : L_PAREN clause R_PAREN binary_op L_PAREN clause R_PAREN'
-    p[0] = p[4]([p[2], p[6]])
+    'op_appl : parenthesized_clause binary_op parenthesized_clause'
+    p[0] = p[2]([p[1], p[3]])
 
 
-def p_op_appl_nary(p):
-    'op_appl : nary_op_and_appl'
+def p_op_appl_parenthesized_clause(p):
+    'op_appl : parenthesized_clause'
     p[0] = p[1]
 
 
-def p_op_appl_prefix(p):
-    'op_appl : prefix_op L_PAREN comma_separated_list R_PAREN'
-    p[0] = p[1](p[3])
-
-
-def p_op_appl_atom(p):
-    'op_appl : atom'
+def p_op_appl_and(p):
+    'op_appl : and_appl'
     p[0] = p[1]
 
 
-def p_op_appl_empty(p):
-    'op_appl : empty'
+def p_op_appl_or(p):
+    'op_appl : or_appl'
     p[0] = p[1]
 
 
@@ -150,18 +161,30 @@ def p_binary_op_xor(p):
     p[0] = Xor
 
 
-# FIXME: this looks very bad
-def p_nary_op_and_appl_nary(p):
-    'nary_op_and_appl : nary_op_and_appl nary_op L_PAREN clause R_PAREN'
+def p_and_appl_appl(p):
+    'and_appl : and_appl AND parenthesized_clause'
     if isinstance(p[1], list):
-        p[0] = p[2](p[1] + [p[4]])
+        p[0] = And(p[1] + [p[3]])
     else:
-        p[0] = p[2]([p[1]] + [p[4]])
+        p[0] = And([p[1]] + [p[3]])
 
 
-def p_nary_op_and_appl_single(p):
-    'nary_op_and_appl : L_PAREN clause R_PAREN'
-    p[0] = p[2]
+def p_and_appl_base(p):
+    'and_appl : parenthesized_clause AND parenthesized_clause'
+    p[0] = And([p[1], p[3]])
+
+
+def p_or_appl_appl(p):
+    'or_appl : or_appl OR parenthesized_clause'
+    if isinstance(p[1], list):
+        p[0] = Or(p[1] + [p[3]])
+    else:
+        p[0] = Or([p[1]] + [p[3]])
+
+
+def p_or_appl_base(p):
+    'or_appl : parenthesized_clause OR parenthesized_clause'
+    p[0] = Or([p[1], p[3]])
 
 
 def p_prefix_op(p):
@@ -190,11 +213,6 @@ def p_function_or_predicate_equals(p):
     p[0] = Equals
 
 
-# def p_function_or_predicate_divby(p):
-#     'function_or_predicate : DIVBY'
-#     p[0] = DivisibleBy
-
-
 def p_function_or_predicate_custom(p):
     'function_or_predicate : CUSTOM_FUNCTION_OR_PREDICATE'
     name = p[1]
@@ -205,16 +223,6 @@ def p_function_or_predicate_custom(p):
         return res
 
     p[0] = create_p
-
-
-def p_nary_op_and(p):
-    'nary_op : AND'
-    p[0] = And
-
-
-def p_nary_op_or(p):
-    'nary_op : OR'
-    p[0] = Or
 
 
 def p_atom_variable(p):
